@@ -11,6 +11,7 @@ import {
   Bot,
   BriefcaseBusiness,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Gauge,
   Home,
@@ -20,7 +21,6 @@ import {
   Send,
   Sparkles,
   TrendingUp,
-  Upload,
   UserRound,
   WandSparkles,
   X,
@@ -29,6 +29,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -84,40 +85,13 @@ const ellieThemes = {
 };
 
 
-const proactiveInsights = [
-  {
-    type: "Signal",
-    title: "Repeat contacts are rising faster than volume",
-    text: "Repeat contacts increased 8.2%, while overall Credit volume increased 4.1%.",
-    action: "Review drivers",
-    icon: AlertTriangle,
-    tone: "amber",
-    prompt: "Why are repeat contacts rising?",
-  },
-  {
-    type: "Forecast",
-    title: "Credit volume may reach 3,625 contacts",
-    text: "The prototype projects an 11.9% increase between August and November.",
-    action: "Explain forecast",
-    icon: TrendingUp,
-    tone: "green",
-    prompt: "Explain the Credit volume forecast",
-  },
-  {
-    type: "Opportunity",
-    title: "A 3-point FCR lift could reduce repeat demand",
-    text: "Approximately 140 monthly contacts may be avoidable based on current demo assumptions.",
-    action: "See recommendation",
-    icon: Lightbulb,
-    tone: "blue",
-    prompt: "What action should we take to improve FCR?",
-  },
-];
+
 
 const starterMessages = [
   {
     role: "ellie",
     text: "Hi Dasia! I’m Ellie. I can explain queue trends, repeat-contact drivers, forecasts, and recommended actions.",
+    createdAt: new Date().toISOString(),
   },
 ];
 
@@ -448,6 +422,7 @@ function FloatingEllie({
   setEllieTheme,
   outfit,
   setOutfit,
+  generateEllieAnswer,
 }) {
   const [question, setQuestion] = useState("");
   const [customizing, setCustomizing] = useState(false);
@@ -492,47 +467,77 @@ function FloatingEllie({
     return ellieJokes[nextIndex];
   };
 
-  const answerQuestion = (text) => {
-    const lower = text.toLowerCase();
-
-    if (
-      lower.includes("joke") ||
-      lower.includes("funny") ||
-      lower.includes("laugh")
-    ) {
-      return getNextJoke();
-    }
-
-    if (lower.includes("executive")) {
-      return "Executive summary: repeat contacts are growing faster than total volume. Payment arrangements are the leading visible driver. Review that journey first, then validate Friday staffing and contact-cost assumptions.";
-    }
-    if (lower.includes("action") || lower.includes("recommend")) {
-      return "Start with payment-arrangement contacts. Review transfers, unresolved outcomes, and repeat behavior, then test clearer agent guidance or proactive follow-up during the Friday midday peak.";
-    }
-    if (lower.includes("why") || lower.includes("driver") || lower.includes("repeat")) {
-      return "Payment arrangements are the largest visible Credit driver, with 1,260 demo contacts. Repeat demand is also concentrated around Friday midday.";
-    }
-    if (lower.includes("forecast")) {
-      return "The demo forecast increases from 3,240 contacts in August to 3,625 in November, an increase of approximately 11.9%.";
-    }
-    if (lower.includes("fcr")) {
-      return "FCR is 78.2%. A 3-point lift may avoid about 140 contacts per month under the demo assumptions.";
-    }
-    return "Credit currently shows 3,240 contacts, 78.2% FCR, and a 24.4% repeat-contact rate in this prototype.";
-  };
-
-  const ask = (prompt) => {
-    const text = (prompt || question).trim();
+  const ask = async (prompt) => {
+    const text = String(
+      prompt || question
+    ).trim();
+  
     if (!text) return;
-
+  
     setMood("thinking");
+    setQuestion("");
+  
     setMessages((current) => [
       ...current,
-      { role: "user", text },
-      { role: "ellie", text: answerQuestion(text) },
+      {
+        role: "user",
+        text,
+        createdAt:
+          new Date().toISOString(),
+      },
     ]);
-    setQuestion("");
-    window.setTimeout(() => setMood("happy"), 800);
+  
+    try {
+      const lower =
+        text.toLowerCase();
+  
+      const answer =
+        lower.includes("joke") ||
+        lower.includes("funny") ||
+        lower.includes("laugh")
+          ? getNextJoke()
+          : await generateEllieAnswer(
+              text
+            );
+  
+      setMessages((current) => [
+        ...current,
+        {
+          role: "ellie",
+          text:
+            typeof answer ===
+            "string"
+              ? answer
+              : "I could not format that response.",
+          createdAt:
+            new Date().toISOString(),
+        },
+      ]);
+  
+      setMood("excited");
+  
+      window.setTimeout(() => {
+        setMood("happy");
+      }, 900);
+    } catch (error) {
+      console.error(
+        "Ellie response error:",
+        error
+      );
+  
+      setMessages((current) => [
+        ...current,
+        {
+          role: "ellie",
+          text:
+            "I could not generate a response. Check the Ellie AI server function and API settings.",
+          createdAt:
+            new Date().toISOString(),
+        },
+      ]);
+  
+      setMood("happy");
+    }
   };
 
   return (
@@ -657,7 +662,7 @@ function FloatingEllie({
                     </div>
                   )}
                   <div
-                    className={`max-w-[78%] rounded-[20px] px-4 py-3 text-sm leading-6 shadow-sm ${
+                    className={`max-w-[78%] whitespace-pre-line rounded-[20px] px-4 py-3 text-sm leading-6 shadow-sm ${
                       message.role === "user"
                         ? "rounded-br-md text-white"
                         : "rounded-bl-md border border-white bg-white/80 text-[#355443]"
@@ -742,7 +747,7 @@ function FloatingEllie({
   );
 }
 
-function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMetric, metrics }) {
+function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMetric, metrics, dynamicInsights,}) {
   return (
     <motion.section
       key="overview"
@@ -801,12 +806,13 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
             </h2>
           </div>
           <span className="hidden items-center gap-1 rounded-full bg-white/55 px-3 py-2 text-xs font-bold text-[#64776c] sm:flex">
-            <CheckCircle2 size={14} /> 3 insights detected
+            <CheckCircle2 size={14} /> 
+            {dynamicInsights.length} insights detected 
           </span>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-3">
-          {proactiveInsights.map((insight) => (
+          {dynamicInsights.map((insight) => (
             <InsightCard
               key={insight.title}
               insight={insight}
@@ -1092,113 +1098,2645 @@ function QueueAnalyticsView({
   );
 }
 
-function ForecastingView({ theme, askEllie, forecastData, historicalData }) {
+const parseDashboardDate = (value) => {
+   if (!value) return null;
+ 
+   const text = String(value).trim();
+ 
+   const isoMatch = text.match(
+     /^(\d{4})-(\d{1,2})-(\d{1,2})$/
+   );
+ 
+   if (isoMatch) {
+     const [, year, month, day] = isoMatch;
+ 
+     const date = new Date(
+       Number(year),
+       Number(month) - 1,
+       Number(day)
+     );
+ 
+     return Number.isNaN(date.getTime())
+       ? null
+       : date;
+   }
+ 
+   const slashMatch = text.match(
+     /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+   );
+ 
+   if (slashMatch) {
+     const [, month, day, year] = slashMatch;
+ 
+     const date = new Date(
+       Number(year),
+       Number(month) - 1,
+       Number(day)
+     );
+ 
+     return Number.isNaN(date.getTime())
+       ? null
+       : date;
+   }
+ 
+   const fallbackDate = new Date(text);
+ 
+   return Number.isNaN(
+     fallbackDate.getTime()
+   )
+     ? null
+     : fallbackDate;
+ };
+ 
+ const createDateKey = (date) => {
+   if (!date) return "";
+ 
+   const year = date.getFullYear();
+ 
+   const month = String(
+     date.getMonth() + 1
+   ).padStart(2, "0");
+ 
+   const day = String(
+     date.getDate()
+   ).padStart(2, "0");
+ 
+   return `${year}-${month}-${day}`;
+ };
+ 
+ const createMonthKey = (date) => {
+   if (!date) return "";
+ 
+   const year = date.getFullYear();
+ 
+   const month = String(
+     date.getMonth() + 1
+   ).padStart(2, "0");
+ 
+   return `${year}-${month}`;
+ };
+ 
+ const formatMonthLabel = (monthKey) => {
+   if (!monthKey) {
+     return "No month selected";
+   }
+ 
+   const [year, month] =
+     monthKey.split("-");
+ 
+   const date = new Date(
+     Number(year),
+     Number(month) - 1,
+     1
+   );
+ 
+   return date.toLocaleDateString(
+     "en-US",
+     {
+       month: "long",
+       year: "numeric",
+     }
+   );
+ };
+ 
+ const getPreviousMonthKey = (
+   monthKey
+ ) => {
+   if (!monthKey) return "";
+ 
+   const [year, month] =
+     monthKey.split("-").map(Number);
+ 
+   const previousMonth = new Date(
+     year,
+     month - 2,
+     1
+   );
+ 
+   return createMonthKey(
+     previousMonth
+   );
+ };
+ 
+ const getPriorYearMonthKey = (
+   monthKey
+ ) => {
+   if (!monthKey) return "";
+ 
+   const [year, month] =
+     monthKey.split("-").map(Number);
+ 
+   return `${year - 1}-${String(
+     month
+   ).padStart(2, "0")}`;
+ };
+ 
+ const getForecastPeriodStart = (
+   date,
+   frequency
+ ) => {
+   const result = new Date(date);
+ 
+   result.setHours(0, 0, 0, 0);
+ 
+   if (
+     frequency === "Weekly" 
+   ) {
+     const day = result.getDay();
+ 
+     const distanceFromMonday =
+       day === 0 ? 6 : day - 1;
+ 
+     result.setDate(
+       result.getDate() -
+         distanceFromMonday
+     );
+   }
+ 
+   if (frequency === "Monthly") {
+     result.setDate(1);
+   }
+ 
+   return result;
+ };
+ 
+ const aggregateForecastRows = (
+   rows,
+   frequency
+ ) => {
+   if (frequency === "Daily") {
+     return rows;
+   }
+ 
+   const grouped = {};
+ 
+   rows.forEach((row) => {
+     const date =
+       parseDashboardDate(row.date);
+ 
+     if (!date) return;
+ 
+     const periodStart =
+       getForecastPeriodStart(
+         date,
+         frequency
+       );
+ 
+     const periodKey =
+       createDateKey(periodStart);
+ 
+     if (!grouped[periodKey]) {
+       grouped[periodKey] = {
+         date: periodKey,
+         actual: null,
+         projected: null,
+       };
+     }
+ 
+     if (
+       Number.isFinite(row.actual)
+     ) {
+       grouped[periodKey].actual =
+         (grouped[periodKey]
+           .actual || 0) +
+         row.actual;
+     }
+ 
+     if (
+       Number.isFinite(
+         row.projected
+       )
+     ) {
+       grouped[
+         periodKey
+       ].projected =
+         (grouped[periodKey]
+           .projected || 0) +
+         row.projected;
+     }
+   });
+ 
+   return Object.values(
+     grouped
+   ).sort((first, second) => {
+     const firstDate =
+       parseDashboardDate(
+         first.date
+       );
+ 
+     const secondDate =
+       parseDashboardDate(
+         second.date
+       );
+ 
+     return (
+       firstDate.getTime() -
+       secondDate.getTime()
+     );
+   });
+ };
+ 
+ const calculatePeriodMetrics = (
+   rows
+ ) => {
+   const totals = rows.reduce(
+     (result, row) => {
+       const calls =
+         Number(row.Calls) || 0;
+ 
+       result.calls += calls;
+ 
+       result.repeats +=
+         Number(row.RepeatCalls) ||
+         0;
+ 
+       result.resolved +=
+         Number(
+           row.ResolvedCalls
+         ) || 0;
+ 
+       result.transfers +=
+         Number(row.Transfers) ||
+         0;
+ 
+       result.escalations +=
+         Number(
+           row.Escalations
+         ) || 0;
+ 
+       result.handleTimeTotal +=
+         (Number(
+           row.AverageHandleTime
+         ) || 0) * calls;
+ 
+       const callType = String(
+         row.CallType ||
+           row["Call Type"] ||
+           "Unknown"
+       ).trim();
+ 
+       result.callTypes[
+         callType
+       ] =
+         (result.callTypes[
+           callType
+         ] || 0) + calls;
+ 
+       return result;
+     },
+     {
+       calls: 0,
+       repeats: 0,
+       resolved: 0,
+       transfers: 0,
+       escalations: 0,
+       handleTimeTotal: 0,
+       callTypes: {},
+     }
+   );
+ 
+   const topCallTypeEntry =
+     Object.entries(
+       totals.callTypes
+     ).sort(
+       (first, second) =>
+         second[1] - first[1]
+     )[0];
+ 
+   return {
+     calls: totals.calls,
+ 
+     fcr:
+       totals.calls > 0
+         ? (totals.resolved /
+             totals.calls) *
+           100
+         : 0,
+ 
+     repeatRate:
+       totals.calls > 0
+         ? (totals.repeats /
+             totals.calls) *
+           100
+         : 0,
+ 
+     transferRate:
+       totals.calls > 0
+         ? (totals.transfers /
+             totals.calls) *
+           100
+         : 0,
+ 
+     escalationRate:
+       totals.calls > 0
+         ? (totals.escalations /
+             totals.calls) *
+           100
+         : 0,
+ 
+     averageHandleTime:
+       totals.calls > 0
+         ? totals.handleTimeTotal /
+           totals.calls
+         : 0,
+ 
+     topCallType:
+       topCallTypeEntry?.[0] ||
+       "No data",
+ 
+     topCallTypeCalls:
+       topCallTypeEntry?.[1] ||
+       0,
+   };
+ };
+ 
+ const calculatePercentChange = (
+   current,
+   comparison
+ ) => {
+   if (
+     !Number.isFinite(current) ||
+     !Number.isFinite(
+       comparison
+     ) ||
+     comparison === 0
+   ) {
+     return null;
+   }
+ 
+   return (
+     ((current - comparison) /
+       comparison) *
+     100
+   );
+ };
+
+ function PulseDropdown({
+  value,
+  options,
+  onChange,
+  formatOption = (option) => option,
+  open,
+  setOpen,
+  theme,
+  placeholder = "Select an option",
+}) {
+  const selectedLabel = value
+    ? formatOption(value)
+    : placeholder;
+
   return (
-    <motion.section
-      key="forecasting"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.3 }}
-    >
-      <GlassCard className="p-6" theme={theme}>
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-[#7b8d81]">
-              Contact outlook
-            </p>
-            <h2 className="mt-1 text-2xl font-black" style={{ color: theme.deep }}>
-              Actual and projected Credit volume
-            </h2>
-            <p className="mt-2 text-sm text-[#718078]">
-              August is the transition point between actual and projected volume.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => askEllie("Explain the Credit volume forecast")}
-            className="flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold"
-            style={{ background: `${theme.dark}16`, color: theme.dark }}
-          >
-            <Sparkles size={13} /> Ask Ellie to explain
-          </button>
-        </div>
+    <div className="relative z-[9999]">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/80 bg-[#f7faf7] px-4 py-3 text-left text-sm font-black shadow-sm backdrop-blur-md transition-all hover:bg-white/90"
+        style={{
+          color: theme.deep,
+          border: "1px solid rgba(214,223,216,0.95)"
+        }}
+      >
+        <span className="min-w-0 truncate">
+          {selectedLabel}
+        </span>
 
-        <div className="mt-4 h-[360px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={forecastData}>
-              <defs>
-                <linearGradient id="actualFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop stopColor={theme.dark} stopOpacity=".34" />
-                  <stop offset="1" stopColor={theme.dark} stopOpacity=".02" />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} strokeOpacity=".1" />
-              <XAxis dataKey="date" axisLine={false} tickLine={false} minTickGap={35} tickFormatter={(value) =>
-                new Date(`${value}T00:00:00`).toLocaleDateString(
-                  "en-US",
-                  {
-                    month: "short",
-                    day: "numeric",
-                  }
-                )
-              } />
+        <ChevronDown
+          size={16}
+          className={`shrink-0 transition-transform duration-200 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
 
-              <YAxis axisLine={false} tickLine={false} domain={["auto", "auto"]} tickFormatter={(value) =>
-                Number(value).toLocaleString()
-              }
-              />
+      <AnimatePresence>
+        {open && (
+          <motion.div
+          initial={{
+            opacity: 0,
+            y: -8,
+            scale: 0.97,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            scale: 1,
+          }}
+          exit={{
+            opacity: 0,
+            y: -6,
+            scale: 0.97,
+          }}
+          transition={{
+            duration: 0.18,
+          }}
+          className="absolute top-full z-[9999] mt-2 max-h-72 w-full overflow-auto rounded-2xl p-2 shadow-2xl"
+          style={{
+            background: "#f7faf7",
+            border: "1px solid rgba(214,223,216,0.95)",
+            boxShadow:
+              "0 18px 40px rgba(36,74,53,0.15)",
+          }}
+        >
+            {options.length === 0 ? (
+              <div className="px-3 py-3 text-sm font-bold text-[#718078]">
+                No options available
+              </div>
+            ) : (
+              options.map((option) => {
+                const isSelected =
+                  option === value;
 
-              <Tooltip
-                contentStyle={{
-                  borderRadius: 16,
-                  border: "1px solid rgba(255,255,255,.9)",
-                  background: "rgba(255,255,255,.94)",
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="actual"
-                stroke={theme.dark}
-                strokeWidth={3}
-                fill="url(#actualFill)"
-                connectNulls={false}
-              />
-              <Area
-                type="monotone"
-                dataKey="projected"
-                stroke={theme.accent}
-                strokeWidth={3}
-                strokeDasharray="7 6"
-                fill="transparent"
-                connectNulls={false}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+                return (
+                  <button
+                    key={String(option)}
+                    type="button"
+                    onClick={() => {
+                      onChange(option);
+                      setOpen(false);
+                    }}
+                    className="w-full rounded-xl px-3 py-2.5 text-left text-sm font-bold transition-all duration-150 hover:bg-[#eef4ef] hover:shadow-sm"
+                    style={{
+                      color: theme.deep,
+                      background: isSelected
+                        ? "#dfe8e0"
+                        : "#f7faf7",
+                    }}
+                  >
+                    <span className="truncate">
+                      {formatOption(option)}
+                    </span>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          {[
-            ["Projected growth", "+11.9%"],
-            ["November volume", "3,625"],
-            ["Model status", "Prototype"],
-          ].map(([label, value]) => (
-            <div key={label} className="rounded-2xl border border-white/80 bg-white/45 p-4">
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
-                {label}
-              </p>
-              <p className="mt-2 text-xl font-black" style={{ color: theme.deep }}>
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </GlassCard>
-    </motion.section>
+                    {isSelected && (
+                      <CheckCircle2
+                        size={15}
+                        style={{
+                          color: theme.dark,
+                        }}
+                      />
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
-function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie }) {
+ function ForecastingView({
+   theme,
+   askEllie,
+   forecastData,
+   callData,
+   setHistoricalComparisonContext,
+ }) {
+   const [frequency, setFrequency] =
+     useState("Daily");
+   
+   const [forecastRange, setForecastRange] =
+      useState("All Data");
+   
+   const [forecastStartDate, setForecastStartDate] =
+      useState("");
+  
+   const [forecastEndDate, setForecastEndDate] =
+      useState("");
+    
+   const [forecastRangeOpen, setForecastRangeOpen] =
+      useState(false);
+ 
+   const [selectedQueue, setSelectedQueue] =
+     useState("All Queues");
+   
+   const [
+    primaryMonthDropdownOpen,
+    setPrimaryMonthDropdownOpen,
+   ] = useState(false);
+
+   const [
+    comparisonModeDropdownOpen,
+    setComparisonModeDropdownOpen,
+   ] = useState(false);
+
+   const [
+    customMonthDropdownOpen,
+    setCustomMonthDropdownOpen,
+   ] = useState(false);
+
+   const [queueDropdownOpen, setQueueDropdownOpen] =
+    useState(false);
+ 
+   const [selectedMonth, setSelectedMonth] =
+     useState("");
+ 
+   const [comparisonMode, setComparisonMode] =
+     useState("Previous Month");
+ 
+   const [
+     customComparisonMonth,
+     setCustomComparisonMonth,
+   ] = useState("");
+ 
+   const queueOptions = useMemo(() => {
+     return [
+       "All Queues",
+       ...Array.from(
+         new Set(
+           callData
+             .map((row) =>
+               String(
+                 row.Queue || ""
+               ).trim()
+             )
+             .filter(Boolean)
+         )
+       ).sort(),
+     ];
+   }, [callData]);
+ 
+   const filteredCallData = useMemo(() => {
+     if (
+       selectedQueue ===
+       "All Queues"
+     ) {
+       return callData;
+     }
+ 
+     return callData.filter(
+       (row) =>
+         String(row.Queue).trim() ===
+         selectedQueue
+     );
+   }, [callData, selectedQueue]);
+ 
+   const availableMonths = useMemo(() => {
+     return Array.from(
+       new Set(
+         filteredCallData
+           .map((row) => {
+             const date =
+               parseDashboardDate(
+                 row.Date
+               );
+ 
+             return date
+               ? createMonthKey(date)
+               : "";
+           })
+           .filter(Boolean)
+       )
+     ).sort();
+   }, [filteredCallData]);
+ 
+   useEffect(() => {
+     if (
+       availableMonths.length === 0
+     ) {
+       setSelectedMonth("");
+       return;
+     }
+ 
+     if (
+       !availableMonths.includes(
+         selectedMonth
+       )
+     ) {
+       setSelectedMonth(
+         availableMonths[
+           availableMonths.length - 1
+         ]
+       );
+     }
+   }, [
+     availableMonths,
+     selectedMonth,
+   ]);
+ 
+   useEffect(() => {
+     if (
+       availableMonths.length === 0
+     ) {
+       setCustomComparisonMonth(
+         ""
+       );
+ 
+       return;
+     }
+ 
+     if (
+       !availableMonths.includes(
+         customComparisonMonth
+       )
+     ) {
+       setCustomComparisonMonth(
+         availableMonths[
+           Math.max(
+             0,
+             availableMonths.length -
+               2
+           )
+         ]
+       );
+     }
+   }, [
+     availableMonths,
+     customComparisonMonth,
+   ]);
+ 
+   const comparisonMonth =
+     useMemo(() => {
+       if (!selectedMonth) {
+         return "";
+       }
+ 
+       if (
+         comparisonMode ===
+         "Previous Month"
+       ) {
+         return getPreviousMonthKey(
+           selectedMonth
+         );
+       }
+ 
+       if (
+         comparisonMode ===
+         "Same Month Last Year"
+       ) {
+         return getPriorYearMonthKey(
+           selectedMonth
+         );
+       }
+ 
+       if (
+         comparisonMode ===
+         "Custom Month"
+       ) {
+         return customComparisonMonth;
+       }
+ 
+       return "";
+     }, [
+       selectedMonth,
+       comparisonMode,
+       customComparisonMonth,
+     ]);
+ 
+   const selectedMonthRows =
+     useMemo(() => {
+       return filteredCallData.filter(
+         (row) => {
+           const date =
+             parseDashboardDate(
+               row.Date
+             );
+ 
+           return (
+             date &&
+             createMonthKey(date) ===
+               selectedMonth
+           );
+         }
+       );
+     }, [
+       filteredCallData,
+       selectedMonth,
+     ]);
+ 
+   const comparisonMonthRows =
+     useMemo(() => {
+       if (!comparisonMonth) {
+         return [];
+       }
+ 
+       return filteredCallData.filter(
+         (row) => {
+           const date =
+             parseDashboardDate(
+               row.Date
+             );
+ 
+           return (
+             date &&
+             createMonthKey(date) ===
+               comparisonMonth
+           );
+         }
+       );
+     }, [
+       filteredCallData,
+       comparisonMonth,
+     ]);
+ 
+   const selectedMetrics =
+     useMemo(
+       () =>
+         calculatePeriodMetrics(
+           selectedMonthRows
+         ),
+       [selectedMonthRows]
+     );
+ 
+   const comparisonMetrics =
+     useMemo(
+       () =>
+         calculatePeriodMetrics(
+           comparisonMonthRows
+         ),
+       [comparisonMonthRows]
+     );
+ 
+   const comparisonExists =
+     comparisonMonthRows.length > 0;
+ 
+     const allAggregatedForecastData =
+     useMemo(() => {
+       return aggregateForecastRows(
+         forecastData,
+         frequency
+       );
+     }, [forecastData, frequency]);
+   
+   const forecastDateBounds =
+     useMemo(() => {
+       const validDates =
+         allAggregatedForecastData
+           .map((row) =>
+             parseDashboardDate(row.date)
+           )
+           .filter(Boolean)
+           .sort(
+             (first, second) =>
+               first.getTime() -
+               second.getTime()
+           );
+   
+       if (validDates.length === 0) {
+         return {
+           minimum: "",
+           maximum: "",
+         };
+       }
+   
+       return {
+         minimum: createDateKey(
+           validDates[0]
+         ),
+         maximum: createDateKey(
+           validDates[
+             validDates.length - 1
+           ]
+         ),
+       };
+     }, [allAggregatedForecastData]);
+   
+   useEffect(() => {
+     if (
+       !forecastDateBounds.minimum ||
+       !forecastDateBounds.maximum
+     ) {
+       return;
+     }
+   
+     if (!forecastStartDate) {
+       setForecastStartDate(
+         forecastDateBounds.minimum
+       );
+     }
+   
+     if (!forecastEndDate) {
+       setForecastEndDate(
+         forecastDateBounds.maximum
+       );
+     }
+   }, [
+     forecastDateBounds,
+     forecastStartDate,
+     forecastEndDate,
+   ]);
+   
+   const aggregatedForecastData =
+     useMemo(() => {
+       if (
+         allAggregatedForecastData.length === 0
+       ) {
+         return [];
+       }
+   
+       if (forecastRange === "All Data") {
+         return allAggregatedForecastData;
+       }
+   
+       const maximumDate =
+         parseDashboardDate(
+           forecastDateBounds.maximum
+         );
+   
+       if (!maximumDate) {
+         return allAggregatedForecastData;
+       }
+   
+       let rangeStart = null;
+       let rangeEnd =
+         new Date(maximumDate);
+   
+       if (forecastRange === "Last 30 Days") {
+         rangeStart =
+           new Date(maximumDate);
+   
+         rangeStart.setDate(
+           rangeStart.getDate() - 29
+         );
+       }
+   
+       if (forecastRange === "Last 90 Days") {
+         rangeStart =
+           new Date(maximumDate);
+   
+         rangeStart.setDate(
+           rangeStart.getDate() - 89
+         );
+       }
+   
+       if (forecastRange === "Year to Date") {
+         rangeStart =
+           new Date(
+             maximumDate.getFullYear(),
+             0,
+             1
+           );
+       }
+   
+       if (forecastRange === "Custom Range") {
+         rangeStart =
+           parseDashboardDate(
+             forecastStartDate
+           );
+   
+         rangeEnd =
+           parseDashboardDate(
+             forecastEndDate
+           );
+       }
+   
+       if (!rangeStart || !rangeEnd) {
+         return allAggregatedForecastData;
+       }
+   
+       rangeStart.setHours(0, 0, 0, 0);
+       rangeEnd.setHours(
+         23,
+         59,
+         59,
+         999
+       );
+   
+       return allAggregatedForecastData.filter(
+         (row) => {
+           const rowDate =
+             parseDashboardDate(
+               row.date
+             );
+   
+           return (
+             rowDate &&
+             rowDate >= rangeStart &&
+             rowDate <= rangeEnd
+           );
+         }
+       );
+     }, [
+       allAggregatedForecastData,
+       forecastRange,
+       forecastStartDate,
+       forecastEndDate,
+       forecastDateBounds,
+     ]);
+ 
+   const historicalComparisonChart =
+     useMemo(() => {
+       const selectedByDay = {};
+       const comparisonByDay = {};
+ 
+       selectedMonthRows.forEach(
+         (row) => {
+           const date =
+             parseDashboardDate(
+               row.Date
+             );
+ 
+           if (!date) return;
+ 
+           const day =
+             date.getDate();
+ 
+           selectedByDay[day] =
+             (selectedByDay[day] ||
+               0) +
+             (Number(row.Calls) || 0);
+         }
+       );
+ 
+       comparisonMonthRows.forEach(
+         (row) => {
+           const date =
+             parseDashboardDate(
+               row.Date
+             );
+ 
+           if (!date) return;
+ 
+           const day =
+             date.getDate();
+ 
+           comparisonByDay[day] =
+             (comparisonByDay[day] ||
+               0) +
+             (Number(row.Calls) || 0);
+         }
+       );
+ 
+       const days = Array.from(
+         new Set([
+           ...Object.keys(
+             selectedByDay
+           ).map(Number),
+ 
+           ...Object.keys(
+             comparisonByDay
+           ).map(Number),
+         ])
+       ).sort(
+         (first, second) =>
+           first - second
+       );
+ 
+       return days.map((day) => ({
+         day: `Day ${day}`,
+         selected:
+           selectedByDay[day] ??
+           null,
+         comparison:
+           comparisonByDay[day] ??
+           null,
+       }));
+     }, [
+       selectedMonthRows,
+       comparisonMonthRows,
+     ]);
+ 
+   const selectedMonthLabel =
+     formatMonthLabel(
+       selectedMonth
+     );
+ 
+   const comparisonMonthLabel =
+     formatMonthLabel(
+       comparisonMonth
+     );
+ 
+   const callChange =
+     comparisonExists
+       ? calculatePercentChange(
+           selectedMetrics.calls,
+           comparisonMetrics.calls
+         )
+       : null;
+ 
+   const fcrPointChange =
+     comparisonExists
+       ? selectedMetrics.fcr -
+         comparisonMetrics.fcr
+       : null;
+ 
+   const repeatPointChange =
+     comparisonExists
+       ? selectedMetrics.repeatRate -
+         comparisonMetrics.repeatRate
+       : null;
+ 
+   const transferPointChange =
+     comparisonExists
+       ? selectedMetrics.transferRate -
+         comparisonMetrics.transferRate
+       : null;
+    
+       useEffect(() => {
+        if (
+          !selectedMonth ||
+          !setHistoricalComparisonContext
+        ) {
+          return;
+        }
+      
+        setHistoricalComparisonContext({
+          queue: selectedQueue,
+      
+          selectedMonth,
+          selectedMonthLabel,
+      
+          comparisonMode,
+          comparisonMonth,
+          comparisonMonthLabel,
+          comparisonExists,
+      
+          selectedMetrics: {
+            calls: selectedMetrics.calls,
+            fcr: selectedMetrics.fcr,
+            repeatRate:
+              selectedMetrics.repeatRate,
+            transferRate:
+              selectedMetrics.transferRate,
+            escalationRate:
+              selectedMetrics.escalationRate,
+            averageHandleTime:
+              selectedMetrics.averageHandleTime,
+            topCallType:
+              selectedMetrics.topCallType,
+            topCallTypeCalls:
+              selectedMetrics.topCallTypeCalls,
+          },
+      
+          comparisonMetrics: {
+            calls: comparisonMetrics.calls,
+            fcr: comparisonMetrics.fcr,
+            repeatRate:
+              comparisonMetrics.repeatRate,
+            transferRate:
+              comparisonMetrics.transferRate,
+            escalationRate:
+              comparisonMetrics.escalationRate,
+            averageHandleTime:
+              comparisonMetrics.averageHandleTime,
+            topCallType:
+              comparisonMetrics.topCallType,
+            topCallTypeCalls:
+              comparisonMetrics.topCallTypeCalls,
+          },
+      
+          changes: {
+            callPercent: callChange,
+            fcrPoints: fcrPointChange,
+            repeatPoints:
+              repeatPointChange,
+            transferPoints:
+              transferPointChange,
+          },
+        });
+      }, [
+        selectedQueue,
+        selectedMonth,
+        selectedMonthLabel,
+        comparisonMode,
+        comparisonMonth,
+        comparisonMonthLabel,
+        comparisonExists,
+        selectedMetrics,
+        comparisonMetrics,
+        callChange,
+        fcrPointChange,
+        repeatPointChange,
+        transferPointChange,
+        setHistoricalComparisonContext,
+      ]);
+ 
+   const projectedRows =
+     aggregatedForecastData.filter(
+       (row) =>
+         Number.isFinite(
+           row.projected
+         )
+     );
+ 
+   const finalProjection =
+     projectedRows.length > 0
+       ? projectedRows[
+           projectedRows.length - 1
+         ].projected
+       : 0;
+   
+   const actualRows = 
+      aggregatedForecastData.filter(
+         (row) =>
+            Number.isFinite(row.actual)
+      );
+    
+   const latestActual =
+      actualRows.length > 0
+        ? actualRows[
+            actualRows.length - 1
+          ].actual
+        : 0;
+   
+        const firstProjection =
+        projectedRows.length > 0
+          ? projectedRows[0].projected
+          : 0;
+      
+      const projectedChange =
+        firstProjection > 0
+          ? (
+              (finalProjection -
+                firstProjection) /
+              firstProjection
+            ) * 100
+          : 0;
+      
+      const forecastAnimationKey =
+        `${frequency}-${aggregatedForecastData.length}-${finalProjection}`;
+
+   const formatForecastTick = (
+     value
+   ) => {
+     const date =
+       parseDashboardDate(value);
+ 
+     if (!date) return value;
+ 
+     if (frequency === "Monthly") {
+       return date.toLocaleDateString(
+         "en-US",
+         {
+           month: "short",
+           year: "2-digit",
+         }
+       );
+     }
+ 
+     return date.toLocaleDateString(
+       "en-US",
+       {
+         month: "short",
+         day: "numeric",
+       }
+     );
+   };
+ 
+   const formatChange = (
+     value,
+     suffix = "%"
+   ) => {
+     if (
+       value === null ||
+       !Number.isFinite(value)
+     ) {
+       return "No comparison";
+     }
+ 
+     return `${
+       value >= 0 ? "+" : ""
+     }${value.toFixed(1)}${suffix}`;
+   };
+ 
+   return (
+     <motion.section
+       key="forecasting"
+       initial={{
+         opacity: 0,
+         y: 20,
+       }}
+       animate={{
+         opacity: 1,
+         y: 0,
+       }}
+       exit={{
+         opacity: 0,
+         y: -12,
+       }}
+       transition={{
+         duration: 0.3,
+       }}
+       className="space-y-6"
+     >
+       <GlassCard
+         className="p-6"
+         theme={theme}
+       >
+         <div className="flex flex-wrap items-end justify-between gap-4">
+           <div>
+             <p className="text-xs font-black uppercase tracking-widest text-[#7b8d81]">
+               Forecast outlook
+             </p>
+ 
+             <h2
+               className="mt-1 text-2xl font-black"
+               style={{
+                 color: theme.deep,
+               }}
+             >
+               Historical and forecasted contact
+               volume
+             </h2>
+ 
+             <p className="mt-2 text-sm text-[#718078]">
+               View the forecast by daily,
+               weekly, or monthly
+               planning period.
+             </p>
+           </div>
+ 
+           <button
+             type="button"
+             onClick={() =>
+               askEllie(
+                 `Explain the ${frequency.toLowerCase()} forecast`
+               )
+             }
+             className="flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold"
+             style={{
+               background:
+                 `${theme.dark}16`,
+               color: theme.dark,
+             }}
+           >
+             <Sparkles size={13} />
+             Ask Ellie to explain
+           </button>
+         </div>
+ 
+         <div className="mt-6 flex flex-wrap gap-2">
+           {[
+             "Daily",
+             "Weekly",
+             "Monthly",
+           ].map((option) => (
+             <button
+               type="button"
+               key={option}
+               onClick={() =>
+                 setFrequency(option)
+               }
+               className={`rounded-2xl px-5 py-3 text-sm font-black transition-all duration-200 ${
+                 frequency === option
+                   ? "text-white shadow-lg"
+                   : "border border-white bg-white/85 hover: bg-white"
+               }`}
+               style={
+                 frequency === option
+                   ? {
+                       background:
+                         theme.dark,
+                     }
+                   : {
+                       color:
+                         theme.deep,
+                     }
+               }
+             >
+               {option}
+             </button>
+           ))}
+         </div>
+        
+         <div className="relative z-30 mt-4 grid gap-3 rounded-[22px] border border-white/80 bg-white/45 p-4 lg:grid-cols-[1fr_auto]">
+  <div>
+    <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+      Timeline
+    </p>
+
+    <div className="relative mt-2 max-w-sm">
+      <button
+        type="button"
+        onClick={() =>
+          setForecastRangeOpen(
+            (current) => !current
+          )
+        }
+        className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-black shadow-sm transition hover:bg-white"
+        style={{
+          color: theme.deep,
+          background: "#f7faf7",
+          border:
+            "1px solid rgba(214,223,216,0.95)",
+        }}
+      >
+        <span>{forecastRange}</span>
+
+        <ChevronDown
+          size={16}
+          className={`transition-transform ${
+            forecastRangeOpen
+              ? "rotate-180"
+              : ""
+          }`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {forecastRangeOpen && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: -8,
+              scale: 0.97,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+            }}
+            exit={{
+              opacity: 0,
+              y: -6,
+              scale: 0.97,
+            }}
+            transition={{
+              duration: 0.18,
+            }}
+            className="absolute left-0 top-full z-[9999] mt-2 w-full rounded-2xl p-2 shadow-2xl"
+            style={{
+              background: "#f7faf7",
+              border:
+                "1px solid rgba(214,223,216,0.95)",
+              boxShadow:
+                "0 18px 40px rgba(36,74,53,0.15)",
+            }}
+          >
+            {[
+              "All Data",
+              "Last 30 Days",
+              "Last 90 Days",
+              "Year to Date",
+              "Custom Range",
+            ].map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  setForecastRange(
+                    option
+                  );
+
+                  setForecastRangeOpen(
+                    false
+                  );
+                }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-bold transition hover:bg-[#eef4ef]"
+                style={{
+                  color: theme.deep,
+                  background:
+                    option ===
+                    forecastRange
+                      ? "#dfe8e0"
+                      : "#f7faf7",
+                }}
+              >
+                {option}
+
+                {option ===
+                  forecastRange && (
+                  <CheckCircle2
+                    size={15}
+                    style={{
+                      color:
+                        theme.dark,
+                    }}
+                  />
+                )}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  </div>
+
+  {forecastRange ===
+    "Custom Range" && (
+    <motion.div
+      initial={{
+        opacity: 0,
+        y: 8,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      className="grid gap-3 sm:grid-cols-2"
+    >
+      <div>
+        <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+          Start date
+        </label>
+
+        <input
+          type="date"
+          value={forecastStartDate}
+          min={
+            forecastDateBounds.minimum
+          }
+          max={
+            forecastEndDate ||
+            forecastDateBounds.maximum
+          }
+          onChange={(event) =>
+            setForecastStartDate(
+              event.target.value
+            )
+          }
+          className="w-full rounded-2xl px-4 py-3 text-sm font-black shadow-sm outline-none"
+          style={{
+            color: theme.deep,
+            background: "#f7faf7",
+            border:
+              "1px solid rgba(214,223,216,0.95)",
+          }}
+        />
+      </div>
+
+      <div>
+        <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+          End date
+        </label>
+
+        <input
+          type="date"
+          value={forecastEndDate}
+          min={
+            forecastStartDate ||
+            forecastDateBounds.minimum
+          }
+          max={
+            forecastDateBounds.maximum
+          }
+          onChange={(event) =>
+            setForecastEndDate(
+              event.target.value
+            )
+          }
+          className="w-full rounded-2xl px-4 py-3 text-sm font-black shadow-sm outline-none"
+          style={{
+            color: theme.deep,
+            background: "#f7faf7",
+            border:
+              "1px solid rgba(214,223,216,0.95)",
+          }}
+        />
+      </div>
+    </motion.div>
+  )}
+</div>
+ 
+         <motion.div
+  initial={{
+    opacity: 0,
+    y: 16,
+  }}
+  animate={{
+    opacity: 1,
+    y: 0,
+  }}
+  transition={{
+    duration: 0.45,
+  }}
+  className="mt-6 rounded-[24px] border border-white/80 bg-white/45 p-4"
+>
+  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+        Volume trend
+      </p>
+
+      <h3
+        className="mt-1 text-lg font-black"
+        style={{ color: theme.deep }}
+      >
+        Contact Volume Outlook
+      </h3>
+    </div>
+
+    <p className="mt-1 text-sm text-[#718078]">
+      Showing {frequency.toLowerCase()} forecast trends based on loaded contact data.
+    </p>
+
+    <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-[#66766d]">
+      <span className="flex items-center gap-2">
+        <span
+          className="h-3 w-3 rounded-full"
+          style={{
+            background: theme.dark,
+          }}
+        />
+        Actual
+      </span>
+
+      <span className="flex items-center gap-2">
+        <span
+          className="h-3 w-3 rounded-full"
+          style={{
+            background: theme.accent,
+          }}
+        />
+        Projected
+      </span>
+    </div>
+  </div>
+
+  <div className="relative min-h-[390px] w-full overflow-x-auto">
+  {aggregatedForecastData.length === 0 ? (
+    <div className="grid h-[390px] min-w-[900px] place-items-center rounded-2xl border border-dashed border-white bg-white/70">
+      <div className="text-center">
+        <TrendingUp
+          className="mx-auto"
+          size={28}
+          style={{ color: theme.dark }}
+        />
+
+        <p
+          className="mt-3 font-black"
+          style={{ color: theme.deep }}
+        >
+          No forecast data available
+        </p>
+
+        <p className="mt-1 text-xs text-[#718078]">
+          Load a file containing valid Date and Calls columns.
+        </p>
+      </div>
+    </div>
+  ) : (
+    <AreaChart
+      width={1100}
+      height={390}
+      data={aggregatedForecastData}
+      margin={{
+        top: 20,
+        right: 30,
+        left: 15,
+        bottom: 10,
+      }}
+    >
+      <defs>
+        <linearGradient
+          id="forecastActualFill"
+          x1="0"
+          y1="0"
+          x2="0"
+          y2="1"
+        >
+          <stop
+            offset="0%"
+            stopColor={theme.dark}
+            stopOpacity={0.35}
+          />
+
+          <stop
+            offset="100%"
+            stopColor={theme.dark}
+            stopOpacity={0.02}
+          />
+        </linearGradient>
+
+        <linearGradient
+          id="forecastProjectedFill"
+          x1="0"
+          y1="0"
+          x2="0"
+          y2="1"
+        >
+          <stop
+            offset="0%"
+            stopColor={theme.accent}
+            stopOpacity={0.3}
+          />
+
+          <stop
+            offset="100%"
+            stopColor={theme.accent}
+            stopOpacity={0.02}
+          />
+        </linearGradient>
+      </defs>
+
+      <CartesianGrid
+        vertical={false}
+        stroke="rgba(49,95,67,0.14)"
+        strokeDasharray="4 5"
+      />
+
+      <XAxis
+        dataKey="date"
+        axisLine={false}
+        tickLine={false}
+        minTickGap={30}
+        tickFormatter={formatForecastTick}
+        tick={{
+          fill: "#66766d",
+          fontSize: 12,
+          fontWeight: 800,
+        }}
+      />
+
+      <YAxis
+        axisLine={false}
+        tickLine={false}
+        width={76}
+        domain={[0, "auto"]}
+        tickFormatter={(value) =>
+          Number(value).toLocaleString()
+        }
+        tick={{
+          fill: "#66766d",
+          fontSize: 12,
+          fontWeight: 800,
+        }}
+      />
+
+      <Tooltip
+        labelFormatter={(value) =>
+          formatForecastTick(value)
+        }
+        formatter={(value, name) => [
+          Number(value).toLocaleString(),
+          name,
+        ]}
+        contentStyle={{
+          borderRadius: 18,
+          border: "1px solid rgba(255,255,255,.95)",
+          background: "rgba(255,255,255,.96)",
+          boxShadow:
+            "0 14px 36px rgba(38,74,50,.14)",
+        }}
+        labelStyle={{
+          color: theme.deep,
+          fontWeight: 900,
+        }}
+      />
+
+      <Area
+        key={`actual-${frequency}-${aggregatedForecastData.length}`}
+        type="linear"
+        dataKey="actual"
+        name="Actual"
+        stroke={theme.dark}
+        strokeWidth={4}
+        fill="url(#forecastActualFill)"
+        connectNulls={false}
+        dot={false}
+        activeDot={{
+          r: 6,
+          fill: theme.dark,
+          stroke: "white",
+          strokeWidth: 3,
+        }}
+        isAnimationActive={true}
+        animationDuration={900}
+        animationEasing="ease-out"
+      />
+
+      <Area
+        key={`projected-${frequency}-${aggregatedForecastData.length}`}
+        type="linear"
+        dataKey="projected"
+        name="Projected"
+        stroke="#d89a2b"
+        strokeWidth={4}
+        strokeDasharray="8 6"
+        fill="url(#forecastProjectedFill)"
+        connectNulls={false}
+        dot={false}
+        activeDot={{
+          r: 6,
+          fill: "#d89a2b",
+          stroke: "white",
+          strokeWidth: 3,
+        }}
+        isAnimationActive={true}
+        animationBegin={150}
+        animationDuration={1100}
+        animationEasing="ease-out"
+      />
+    </AreaChart>
+  )}
+  </div> 
+</motion.div>
+   
+         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  <motion.div
+    key={`period-${forecastAnimationKey}`}
+    initial={{ opacity: 0, y: 12 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.35 }}
+    whileHover={{ y: -4 }}
+    className="rounded-3xl border border-white/80 bg-white/55 p-5 shadow-sm"
+  >
+    <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+      Forecast view
+    </p>
+
+    <p
+      className="mt-2 text-2xl font-black"
+      style={{ color: theme.deep }}
+    >
+      {frequency}
+    </p>
+
+    <p className="mt-2 text-xs text-[#718078]">
+      Historical and forecasted volume
+    </p>
+  </motion.div>
+
+  <motion.div
+    key={`actual-${forecastAnimationKey}`}
+    initial={{
+      opacity: 0,
+      y: 12,
+      scale: 0.98,
+    }}
+    animate={{
+      opacity: 1,
+      y: 0,
+      scale: 1,
+    }}
+    transition={{
+      duration: 0.4,
+      delay: 0.05,
+    }}
+    whileHover={{ y: -4 }}
+    className="rounded-3xl border border-white/80 bg-white/55 p-5 shadow-sm"
+  >
+    <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+      Latest actual
+    </p>
+
+    <p
+      className="mt-2 text-2xl font-black"
+      style={{ color: theme.deep }}
+    >
+      <CountUp
+        key={`actual-count-${forecastAnimationKey}`}
+        start={0}
+        end={latestActual}
+        duration={1.1}
+        separator=","
+      />
+    </p>
+
+    <p className="mt-2 text-xs text-[#718078]">
+      Latest completed {frequency.toLowerCase()} period
+    </p>
+  </motion.div>
+
+  <motion.div
+    key={`projection-${forecastAnimationKey}`}
+    initial={{
+      opacity: 0,
+      y: 12,
+      scale: 0.98,
+    }}
+    animate={{
+      opacity: 1,
+      y: 0,
+      scale: 1,
+    }}
+    transition={{
+      duration: 0.4,
+      delay: 0.1,
+    }}
+    whileHover={{ y: -4 }}
+    className="rounded-3xl border border-white/80 bg-white/55 p-5 shadow-sm"
+  >
+    <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+      Final projection
+    </p>
+
+    <p
+      className="mt-2 text-2xl font-black"
+      style={{ color: theme.deep }}
+    >
+      <CountUp
+        key={`projection-count-${forecastAnimationKey}`}
+        start={0}
+        end={finalProjection}
+        duration={1.25}
+        separator=","
+      />
+    </p>
+
+    <p className="mt-2 text-xs text-[#718078]">
+      Final projected {frequency.toLowerCase()} period
+    </p>
+  </motion.div>
+
+  <motion.div
+    key={`change-${forecastAnimationKey}`}
+    initial={{
+      opacity: 0,
+      y: 12,
+      scale: 0.98,
+    }}
+    animate={{
+      opacity: 1,
+      y: 0,
+      scale: 1,
+    }}
+    transition={{
+      duration: 0.4,
+      delay: 0.15,
+    }}
+    whileHover={{ y: -4 }}
+    className="rounded-3xl border border-white/80 bg-white/55 p-5 shadow-sm"
+  >
+    <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+      Projected change
+    </p>
+
+    <p
+      className="mt-2 text-2xl font-black"
+      style={{
+        color:
+          projectedChange >= 0
+            ? theme.dark
+            : "#b91c1c",
+      }}
+    >
+
+      <CountUp
+        key={`change-count-${forecastAnimationKey}`}
+        start={0}
+        end={projectedChange}
+        duration={1.1}
+        decimals={1}
+        prefix={projectedChange >= 0 ? "+" : ""}
+        suffix="%"
+      />
+    </p>
+
+    <p className="mt-2 text-xs text-[#718078]">
+      First forecast period to final forecast period
+    </p>
+  </motion.div>
+</div>
+       </GlassCard>
+ 
+       <GlassCard
+         className="p-6"
+         theme={theme}
+       >
+         <div className="flex flex-wrap items-end justify-between gap-4">
+           <div>
+             <p className="text-xs font-black uppercase tracking-widest text-[#7b8d81]">
+               Historical analytics
+             </p>
+ 
+             <h2
+               className="mt-1 text-2xl font-black"
+               style={{
+                 color: theme.deep,
+               }}
+             >
+               What did a previous month
+               look like?
+             </h2>
+ 
+             <p className="mt-2 text-sm text-[#718078]">
+               Select a queue and month,
+               then compare it with the
+               previous month, the same
+               month last year, or another
+               custom month.
+             </p>
+           </div>
+ 
+           <button
+             type="button"
+             onClick={() =>
+               askEllie(
+                 comparisonExists
+                   ? `Compare ${selectedMonthLabel} to ${comparisonMonthLabel} for ${selectedQueue}`
+                   : `Summarize ${selectedMonthLabel} for ${selectedQueue}`
+               )
+             }
+             className="flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold"
+             style={{
+               background:
+                 `${theme.dark}16`,
+               color: theme.dark,
+             }}
+           >
+             <Sparkles size={13} />
+             Ask Ellie about this
+           </button>
+         </div>
+
+ <div className="relative mt-6 grid gap-4 rounded-[24px] border border-white/80 bg-white/45 p-5 md:grid-cols-2 xl:grid-cols-4">
+{/* Queue */}
+<div>
+  <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+Queue
+</label>  
+             <div className="relative">
+  <button
+    type="button"
+    onClick={() =>
+      setQueueDropdownOpen(
+        !queueDropdownOpen
+      )
+    }
+    className="flex w-full items-center justify-between rounded-2xl border border-white/80 bg-[#f7faf7] px-4 py-3 text-sm font-black shadow-sm backdrop-blur-md transition-all hover:bg-white/90"
+    style={{
+      color: theme.deep,
+    }}
+  >
+    <span>{selectedQueue}</span>
+
+    <ChevronDown
+      size={16}
+      className={`transition-transform ${
+        queueDropdownOpen
+          ? "rotate-180"
+          : ""
+      }`}
+    />
+  </button>
+  
+  <AnimatePresence>
+  {queueDropdownOpen && (
+    <motion.div
+      initial={{
+        opacity: 0,
+        y: -8,
+        scale: 0.97,
+      }}
+      animate={{
+        opacity: 1,
+        y:0,
+        scale:1,
+      }}
+      exit={{
+        opacity: 0,
+        y: -6,
+        scale: 0.97,
+      }}
+      transition={{
+        duration: 0.18,
+      }}
+    className="absolute top-full z-50 mt-2 max-h-72 w-full overflow-auto rounded-2xl p-2 shadow-2xl"
+    style={{
+      background: "#f7faf7",
+      border: "1px solid rgba(214,223,216,0.95)",
+      boxShadow: "0 18px 40px rgba(36,74,53,0.15)",
+    }}
+  >
+
+      {queueOptions.map((queue) => (
+        <button
+          key={queue}
+          type="button"
+          onClick={() => {
+            setSelectedQueue(queue);
+            setQueueDropdownOpen(false);
+          }}
+          className="w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition-all duration-150 hover:bg-white hover:shadow-sm"
+          style={{
+            color: theme.deep,
+            background:
+              queue === selectedQueue
+                ? "rgba(107,139,116,0.15)"
+                : "transparent",
+          }}
+        >
+          {queue}
+        </button>
+      ))}
+    </motion.div>
+  )}
+  </AnimatePresence>
+</div>
+</div>
+
+
+          {/* Primary Month */}
+<div>
+
+<label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+Primary month
+</label>
+
+<PulseDropdown value={selectedMonth}
+options={availableMonths}
+onChange={setSelectedMonth}
+formatOption={formatMonthLabel}
+open={primaryMonthDropdownOpen}
+setOpen={setPrimaryMonthDropdownOpen}
+theme={theme}
+placeholder="Select a month" />
+</div>
+
+{/* Compare To */}
+
+<div>
+
+<label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+Compare to
+</label>
+<PulseDropdown value={comparisonMode}
+options={[
+"No Comparison",
+"Previous Month",
+"Same Month Last Year",
+"Custom Month",
+]}
+
+onChange={setComparisonMode}
+open={comparisonModeDropdownOpen}
+setOpen={setComparisonModeDropdownOpen}
+theme={theme}
+placeholder="Choose a comparison"
+/>
+
+</div>
+
+{/* Comparison Month */}
+<div>
+  <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+    Comparison month
+  </label>
+
+  {comparisonMode === "Custom Month" ? (
+    <PulseDropdown
+      value={customComparisonMonth}
+      options={availableMonths.filter(
+        (month) => month !== selectedMonth
+      )}
+      onChange={setCustomComparisonMonth}
+      formatOption={formatMonthLabel}
+      open={customMonthDropdownOpen}
+      setOpen={setCustomMonthDropdownOpen}
+      theme={theme}
+      placeholder="Select comparison month"
+    />
+  ) : (
+    <div
+      className="flex min-h-[46px] items-center rounded-2xl border border-white/80 bg-[#f7faf7] px-4 py-3 text-sm font-black shadow-sm"
+      style={{
+        color: theme.deep,
+      }}
+    >
+      {comparisonMode === "No Comparison"
+        ? "No comparison selected"
+        : comparisonMonthLabel}
+    </div>
+  )}
+</div>
+</div>
+         {!selectedMonth ? (
+           <div className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-800">
+             No historical months were
+             found in the currently loaded
+             data.
+           </div>
+         ) : (
+           <>
+             
+             <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  {[
+    {
+      label: "Total calls",
+      value: selectedMetrics.calls,
+      decimals: 0,
+      suffix: "",
+      change: callChange,
+      changeSuffix: "%",
+    },
+    {
+      label: "FCR",
+      value: selectedMetrics.fcr,
+      decimals: 1,
+      suffix: "%",
+      change: fcrPointChange,
+      changeSuffix: " pts",
+    },
+    {
+      label: "Repeat rate",
+      value: selectedMetrics.repeatRate,
+      decimals: 1,
+      suffix: "%",
+      change: repeatPointChange,
+      changeSuffix: " pts",
+    },
+    {
+      label: "Transfer rate",
+      value: selectedMetrics.transferRate,
+      decimals: 1,
+      suffix: "%",
+      change: transferPointChange,
+      changeSuffix: " pts",
+    },
+  ].map((metric, index) => (
+    <motion.div
+      key={`${selectedMonth}-${comparisonMonth}-${selectedQueue}-${metric.label}`}
+      initial={{
+        opacity: 0,
+        y: 12,
+        scale: 0.98,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+        scale: 1,
+      }}
+      transition={{
+        duration: 0.4,
+        delay: index * 0.06,
+      }}
+      whileHover={{ y: -4 }}
+      className="rounded-3xl border border-white/80 bg-white/55 p-5 shadow-sm"
+    >
+      <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+        {metric.label}
+      </p>
+
+      <p
+        className="mt-2 text-2xl font-black"
+        style={{ color: theme.deep }}
+      >
+        <CountUp
+          key={`${selectedMonth}-${selectedQueue}-${metric.label}-count`}
+          start={0}
+          end={metric.value}
+          duration={1.1}
+          decimals={metric.decimals}
+          separator=","
+          suffix={metric.suffix}
+        />
+      </p>
+
+      <p
+        className={`mt-2 text-xs font-black ${
+          metric.change === null
+            ? "text-[#7b8d81]"
+            : metric.change > 0
+              ? "text-emerald-700"
+              : metric.change < 0
+                ? "text-rose-700"
+                : "text-[#7b8d81]"
+        }`}
+      >
+        {formatChange(
+          metric.change,
+          metric.changeSuffix
+        )}
+
+        {comparisonExists
+          ? ` vs ${comparisonMonthLabel}`
+          : ""}
+      </p>
+    </motion.div>
+  ))}
+</div>
+ 
+             <div className="mt-6 grid gap-5 xl:grid-cols-[1.6fr_1fr]">
+               <div className="rounded-[24px] border border-white/80 bg-white/45 p-5">
+
+
+                 <div className="flex flex-wrap items-center justify-between gap-3">
+                   <div>
+                     <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+                       Daily historical
+                       comparison
+                     </p>
+ 
+                     <h3
+                       className="mt-1 text-lg font-black"
+                       style={{
+                         color:
+                           theme.deep,
+                       }}
+                     >
+                       {selectedMonthLabel}
+                       {comparisonExists
+                         ? ` vs ${comparisonMonthLabel}`
+                         : ""}
+                     </h3>
+                   </div>
+
+                  
+                   {!comparisonExists &&
+                     comparisonMode !==
+                       "No Comparison" && (
+                       <span className="rounded-full bg-amber-100 px-3 py-2 text-xs font-black text-amber-800">
+                         Comparison month
+                         unavailable
+                       </span>
+                     )}
+                 </div>
+
+                 <div className="mt-2 flex flex-wrap items-center gap-5 text-xs font-black text-[#66766d]">
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="h-3.5 w-3.5 rounded-full shadow-sm"
+                      style={{
+                        background: theme.dark,
+                      }}
+                      />
+                      {selectedMonthLabel} (Current)
+                  </span>
+
+                  {comparisonExists && (
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="h-3.5 w-3.5 rounded-full shadow-sm"
+                        style={{
+                          background: theme.accent,
+                        }}
+                      />
+                        {comparisonMonthLabel} (Comparison)
+                    </span>
+                  )}
+                 </div>
+
+             
+                 <div className="mt-4 h-[330px]">
+                   <ResponsiveContainer
+                     width="100%"
+                     height="100%"
+                   >
+                     <AreaChart
+                       key={`${selectedMonth}-${comparisonMonth}-${selectedQueue}`} 
+                       data={historicalComparisonChart}
+                     >
+                       <CartesianGrid
+                         vertical={false}
+                         strokeOpacity=".1"
+                       />
+ 
+                       <XAxis
+                         dataKey="day"
+                         axisLine={false}
+                         tickLine={false}
+                         minTickGap={24}
+                       />
+ 
+                       <YAxis
+                         axisLine={false}
+                         tickLine={false}
+                         tickFormatter={(
+                           value
+                         ) =>
+                           Number(
+                             value
+                           ).toLocaleString()
+                         }
+                       />
+ 
+                       <Tooltip
+                         formatter={(
+                           value,
+                           name
+                         ) => [
+                           Number(
+                             value
+                           ).toLocaleString(),
+                           name,
+                         ]}
+                         contentStyle={{
+                           borderRadius: 16,
+                           border:
+                             "1px solid rgba(255,255,255,.9)",
+                           background:
+                             "rgba(255,255,255,.94)",
+                         }}
+                       />
+ 
+                       <Area
+                         key={`selected-${selectedMonth}-${selectedQueue}`}     
+                         type="monotone"
+                         dataKey="selected"
+                         name={selectedMonthLabel}
+                         stroke={theme.dark}
+                         strokeWidth={3}
+                         fill={`${theme.dark}20`}
+                         connectNulls={false}
+                         isAnimationActive
+                         animationDuration={900}
+                         animationEasing="ease-out"
+                       />
+ 
+                       {comparisonExists && (
+                         <Area
+                           key={`comparison-${comparisonMonth}-${selectedQueue}`}
+                           type="monotone"
+                           dataKey="comparison"
+                           name={comparisonMonthLabel}
+                           stroke={theme.accent}
+                           strokeWidth={3}
+                           strokeDasharray="7 6"
+                           fill="transparent"
+                           connectNulls={false}
+                           isAnimationActive
+                           animationBegin={150}
+                           animationDuration={1100}
+                           animationEasing="ease-out"
+                         />
+                       )}
+                     </AreaChart>
+                   </ResponsiveContainer>
+                 </div>
+               </div>
+ 
+               <div className="rounded-[24px] border border-white/80 bg-white/50 p-6">
+                 <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+                   What changed?
+                 </p>
+ 
+                 <h3
+                   className="mt-2 text-xl font-black"
+                   style={{
+                     color: theme.deep,
+                   }}
+                 >
+                   Historical interpretation
+                 </h3>
+ 
+                 <div className="mt-5 space-y-4 text-sm leading-6 text-[#66766d]">
+                   <p>
+                     <strong
+                       style={{
+                         color:
+                           theme.deep,
+                       }}
+                     >
+                       {selectedMonthLabel}
+                     </strong>{" "}
+                     recorded{" "}
+                     <strong>
+                       {selectedMetrics.calls.toLocaleString()}
+                     </strong>{" "}
+                     calls.
+                   </p>
+ 
+                   {comparisonExists ? (
+                     <>
+                       <p>
+                         Call volume{" "}
+                         {callChange >= 0
+                           ? "increased"
+                           : "decreased"}{" "}
+                         by{" "}
+                         <strong>
+                           {Math.abs(
+                             callChange || 0
+                           ).toFixed(
+                             1
+                           )}
+                           %
+                         </strong>{" "}
+                         compared with{" "}
+                         {comparisonMonthLabel}.
+                       </p>
+ 
+                       <p>
+                         FCR changed by{" "}
+                         <strong>
+                           {formatChange(
+                             fcrPointChange,
+                             " points"
+                           )}
+                         </strong>
+                         , while repeat
+                         contacts changed
+                         by{" "}
+                         <strong>
+                           {formatChange(
+                             repeatPointChange,
+                             " points"
+                           )}
+                         </strong>
+                         .
+                       </p>
+                     </>
+                   ) : (
+                     <p>
+                       A valid comparison
+                       month is not
+                       available for the
+                       selected comparison.
+                     </p>
+                   )}
+ 
+                   <p>
+                     The highest-volume
+                     contact type was{" "}
+                     <strong
+                       style={{
+                         color:
+                           theme.deep,
+                       }}
+                     >
+                       {
+                         selectedMetrics.topCallType
+                       }
+                     </strong>
+                     , representing{" "}
+                     <strong>
+                       {selectedMetrics.topCallTypeCalls.toLocaleString()}
+                     </strong>{" "}
+                     calls.
+                   </p>
+ 
+                   <p>
+                     Average handle time
+                     was{" "}
+                     <strong>
+                       {selectedMetrics.averageHandleTime.toFixed(
+                         1
+                       )}{" "}
+                       minutes
+                     </strong>
+                     .
+                   </p>
+                 </div>
+ 
+                 <button
+                   type="button"
+                   onClick={() =>
+                     askEllie(
+                       comparisonExists
+                         ? `What changed between ${comparisonMonthLabel} and ${selectedMonthLabel} for ${selectedQueue}?`
+                         : `Summarize ${selectedMonthLabel} for ${selectedQueue}`
+                     )
+                   }
+                   className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black text-white"
+                   style={{
+                     background:
+                       theme.dark,
+                   }}
+                 >
+                   <Sparkles
+                     size={15}
+                   />
+                   Ask Ellie what changed
+                 </button>
+               </div>
+             </div>
+ 
+             <div className="mt-6 overflow-x-auto rounded-[24px] border border-white/80 bg-white/50">
+               <table className="w-full min-w-[800px] text-left">
+                 <thead>
+                   <tr className="border-b border-[#728378]/15 text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+                     <th className="px-5 py-4">
+                       Metric
+                     </th>
+ 
+                     <th className="px-5 py-4">
+                       {
+                         selectedMonthLabel
+                       }
+                     </th>
+ 
+                     <th className="px-5 py-4">
+                       {comparisonExists
+                         ? comparisonMonthLabel
+                         : "Comparison"}
+                     </th>
+ 
+                     <th className="px-5 py-4">
+                       Change
+                     </th>
+                   </tr>
+                 </thead>
+ 
+                 <tbody className="text-sm">
+                   {[
+                     {
+                       metric:
+                         "Total calls",
+                       selected:
+                         selectedMetrics.calls.toLocaleString(),
+                       comparison:
+                         comparisonExists
+                           ? comparisonMetrics.calls.toLocaleString()
+                           : "Unavailable",
+                       change:
+                         formatChange(
+                           callChange,
+                           "%"
+                         ),
+                     },
+                     {
+                       metric: "FCR",
+                       selected:
+                         `${selectedMetrics.fcr.toFixed(
+                           1
+                         )}%`,
+                       comparison:
+                         comparisonExists
+                           ? `${comparisonMetrics.fcr.toFixed(
+                               1
+                             )}%`
+                           : "Unavailable",
+                       change:
+                         formatChange(
+                           fcrPointChange,
+                           " pts"
+                         ),
+                     },
+                     {
+                       metric:
+                         "Repeat rate",
+                       selected:
+                         `${selectedMetrics.repeatRate.toFixed(
+                           1
+                         )}%`,
+                       comparison:
+                         comparisonExists
+                           ? `${comparisonMetrics.repeatRate.toFixed(
+                               1
+                             )}%`
+                           : "Unavailable",
+                       change:
+                         formatChange(
+                           repeatPointChange,
+                           " pts"
+                         ),
+                     },
+                     {
+                       metric:
+                         "Transfer rate",
+                       selected:
+                         `${selectedMetrics.transferRate.toFixed(
+                           1
+                         )}%`,
+                       comparison:
+                         comparisonExists
+                           ? `${comparisonMetrics.transferRate.toFixed(
+                               1
+                             )}%`
+                           : "Unavailable",
+                       change:
+                         formatChange(
+                           transferPointChange,
+                           " pts"
+                         ),
+                     },
+                     {
+                       metric:
+                         "Average handle time",
+                       selected:
+                         `${selectedMetrics.averageHandleTime.toFixed(
+                           1
+                         )} min`,
+                       comparison:
+                         comparisonExists
+                           ? `${comparisonMetrics.averageHandleTime.toFixed(
+                               1
+                             )} min`
+                           : "Unavailable",
+                       change:
+                         comparisonExists
+                           ? formatChange(
+                               calculatePercentChange(
+                                 selectedMetrics.averageHandleTime,
+                                 comparisonMetrics.averageHandleTime
+                               ),
+                               "%"
+                             )
+                           : "No comparison",
+                     },
+                   ].map((row) => (
+                     <tr
+                       key={row.metric}
+                       className="border-b border-[#728378]/10 last:border-0"
+                     >
+                       <td
+                         className="px-5 py-4 font-black"
+                         style={{
+                           color:
+                             theme.deep,
+                         }}
+                       >
+                         {row.metric}
+                       </td>
+ 
+                       <td className="px-5 py-4 text-[#66766d]">
+                         {row.selected}
+                       </td>
+ 
+                       <td className="px-5 py-4 text-[#66766d]">
+                         {
+                           row.comparison
+                         }
+                       </td>
+ 
+                       <td className="px-5 py-4 font-black text-[#66766d]">
+                         {row.change}
+                       </td>
+                     </tr>
+                   ))}
+                 </tbody>
+               </table>
+             </div>
+           </>
+         )}
+       </GlassCard>
+     </motion.section>
+   );
+ }
+
+
+function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, generateExecutiveBrief, briefLoading, }) {
   return (
     <motion.section
       key="ellie"
@@ -1262,13 +3800,18 @@ function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie }) {
                 <Sparkles size={16} /> Open Ellie AI
               </button>
               <button
-                type="button"
-                onClick={() => askEllie("Give me the executive summary and recommended action")}
-                className="rounded-2xl border border-white bg-white/70 px-6 py-3 text-sm font-black"
-                style={{ color: theme.dark }}
-              >
-                Generate summary
-              </button>
+  type="button"
+  onClick={generateExecutiveBrief}
+  disabled={briefLoading}
+  className="rounded-2xl border border-white bg-white/70 px-6 py-3 text-sm font-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+  style={{
+    color: theme.dark,
+  }}
+>
+  {briefLoading
+    ? "Generating brief..."
+    : "Generate Full Summary"}
+</button>
             </div>
           </div>
         </div>
@@ -1289,146 +3832,268 @@ const requiredColumns = [
 ];
 
 function UploadDataButton({ onDataLoaded }) {
-  const [uploading, setUploading] = useState(false);
-
-  const handleFileUpload = (event) => {
-    const file = event.target.files?.[0];
-
-    if (!file) return;
-
-    setUploading(true);
-
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: true,
-      transformHeader: (header) => header.trim(),
-
-      complete: async (results) => {
-        try {
-          const cleanedData = results.data
-            .filter(
-              (row) =>
-                row.Date &&
-                row.Queue &&
-                Number.isFinite(Number(row.Calls)) &&
-                Number(row.Calls) >= 0
-            )
-            .map((row) => ({
-              ...row,
-              Date: String(row.Date).trim(),
-              Queue: String(row.Queue).trim(),
-              CallType: String(
-                row.CallType || row["Call Type"] || "Unknown"
-              ).trim(),
-              Calls: Number(row.Calls) || 0,
-              RepeatCalls: Number(row.RepeatCalls) || 0,
-              ResolvedCalls: Number(row.ResolvedCalls) || 0,
-              Transfers: Number(row.Transfers) || 0,
-              Escalations: Number(row.Escalations) || 0,
-              AverageHandleTime:
-                Number(row.AverageHandleTime) || 0,
-            }));
-
-          if (cleanedData.length === 0) {
-            throw new Error(
-              "No valid rows were found in the CSV."
-            );
-          }
-
-          const uploadUrl =
-            "/.netlify/functions/upload-pulse-data";
-          
-          console.log("Calling upload endpoint:", uploadUrl);
-
-          const response = await fetch(
-            uploadUrl,
-            {
-              method: "POST",
-              cache: "no-store",
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-              },
-              body: JSON.stringify({
-                data: cleanedData,
-              }),
-            }
-          );
-
-          const responseText = await response.text();
-
-          let result = {};
-
-          try {
-            result = responseText
-              ? JSON.parse(responseText)
-              : {};
-          } catch {
-            throw new Error(
-              `Upload returned invalid JSON. Status ${response.status}.`
-            );
-          }
-
-          if (!response.ok) {
-            throw new Error(
-              result.details ||
-                result.message ||
-                `Upload failed with status ${response.status}.`
-            );
-          }
-
-          onDataLoaded(cleanedData);
-
-          alert(
-            `Successfully uploaded ${cleanedData.length.toLocaleString()} records.`
-          );
-        } catch (error) {
-          console.error("Upload error:", error);
-
-          alert(
-            `Upload failed:\n\n${
-              error instanceof Error
-                ? error.message
-                : "Unknown error"
-            }`
-          );
-        } finally {
-          setUploading(false);
-          event.target.value = "";
-        }
-      },
-
-      error: (error) => {
-        console.error("CSV error:", error);
-        alert("Unable to read the CSV.");
-        setUploading(false);
-        event.target.value = "";
-      },
-    });
-  };
-
-  return (
-    <label
-      className={`rounded-2xl px-4 py-3 text-sm font-black text-white ${
-        uploading
-          ? "cursor-not-allowed bg-emerald-400"
-          : "cursor-pointer bg-emerald-600 hover:bg-emerald-700"
-      }`}
-    >
-      {uploading ? "Uploading..." : "Upload Data"}
-
-      <input
-        type="file"
-        accept=".csv,text/csv"
-        onChange={handleFileUpload}
-        disabled={uploading}
-        className="hidden"
-      />
-    </label>
-  );
-}
-
+   const [uploading, setUploading] = useState(false);
+ 
+   const normalizeHeader = (value) =>
+     String(value || "")
+       .trim()
+       .toLowerCase()
+       .replace(/[^a-z0-9]/g, "");
+ 
+   const getValue = (row, possibleNames) => {
+     const normalizedRow = Object.entries(row).reduce(
+       (result, [key, value]) => {
+         result[normalizeHeader(key)] = value;
+         return result;
+       },
+       {}
+     );
+ 
+     for (const name of possibleNames) {
+       const matchedValue =
+         normalizedRow[normalizeHeader(name)];
+ 
+       if (
+         matchedValue !== undefined &&
+         matchedValue !== null &&
+         matchedValue !== ""
+       ) {
+         return matchedValue;
+       }
+     }
+ 
+     return undefined;
+   };
+ 
+   const normalizeRows = (rows) => {
+     return rows
+       .map((row) => {
+         const date = getValue(row, [
+           "Date",
+           "Call Date",
+           "Contact Date",
+           "Interaction Date",
+         ]);
+ 
+         const queue = getValue(row, [
+           "Queue",
+           "Queue Name",
+           "Department",
+           "Business Area",
+         ]);
+ 
+         const callType = getValue(row, [
+           "CallType",
+           "Call Type",
+           "Contact Type",
+           "Contact Reason",
+           "Reason",
+           "Driver",
+         ]);
+ 
+         const calls = getValue(row, [
+           "Calls",
+           "Call Count",
+           "Contacts",
+           "Contact Count",
+           "Volume",
+           "Total Calls",
+         ]);
+ 
+         const repeatCalls = getValue(row, [
+           "RepeatCalls",
+           "Repeat Calls",
+           "Repeats",
+           "Repeat Contacts",
+         ]);
+ 
+         const resolvedCalls = getValue(row, [
+           "ResolvedCalls",
+           "Resolved Calls",
+           "Resolved",
+           "First Call Resolved",
+         ]);
+ 
+         const transfers = getValue(row, [
+           "Transfers",
+           "Transferred Calls",
+           "Transfer Count",
+         ]);
+ 
+         const escalations = getValue(row, [
+           "Escalations",
+           "Escalated Calls",
+           "Escalation Count",
+         ]);
+ 
+         const averageHandleTime = getValue(row, [
+           "AverageHandleTime",
+           "Average Handle Time",
+           "AHT",
+           "Handle Time",
+         ]);
+ 
+         return {
+           Date:
+             date !== undefined
+               ? String(date).trim()
+               : "",
+ 
+           Queue:
+             queue !== undefined && String(queue).trim()
+               ? String(queue).trim()
+               : "Uncategorized",
+ 
+           CallType:
+             callType !== undefined && String(callType).trim()
+               ? String(callType).trim()
+               : "Unknown",
+ 
+           Calls: Number(calls) || 0,
+           RepeatCalls: Number(repeatCalls) || 0,
+           ResolvedCalls: Number(resolvedCalls) || 0,
+           Transfers: Number(transfers) || 0,
+           Escalations: Number(escalations) || 0,
+ 
+           AverageHandleTime:
+             Number(averageHandleTime) || 0,
+         };
+       })
+       .filter(
+         (row) =>
+           row.Date &&
+           Number.isFinite(row.Calls) &&
+           row.Calls >= 0
+       );
+   };
+ 
+   const finishLoading = (rows, fileName) => {
+     const cleanedData = normalizeRows(rows);
+ 
+     if (cleanedData.length === 0) {
+       throw new Error(
+         "No valid rows were found. The file needs a Date column and a Calls, Contacts, Volume, or Call Count column."
+       );
+     }
+ 
+     onDataLoaded(cleanedData);
+ 
+     alert(
+       `${cleanedData.length.toLocaleString()} records loaded from ${fileName}.`
+     );
+   };
+ 
+   const parseDelimitedFile = (file, delimiter) => {
+     Papa.parse(file, {
+       header: true,
+       skipEmptyLines: true,
+       dynamicTyping: true,
+       delimiter,
+       transformHeader: (header) => String(header).trim(),
+ 
+       complete: (results) => {
+         try {
+           finishLoading(results.data, file.name);
+         } catch (error) {
+           console.error("File processing error:", error);
+ 
+           alert(
+             error instanceof Error
+               ? error.message
+               : "Pulse could not process this file."
+           );
+         } finally {
+           setUploading(false);
+         }
+       },
+ 
+       error: (error) => {
+         console.error("File reading error:", error);
+         alert("Pulse could not read this file.");
+         setUploading(false);
+       },
+     });
+   };
+ 
+   const handleFileUpload = async (event) => {
+     const input = event.target;
+     const file = input.files?.[0];
+ 
+     if (!file) return;
+ 
+     setUploading(true);
+ 
+     try {
+       const extension =
+         file.name.split(".").pop()?.toLowerCase() || "";
+ 
+       if (extension === "json") {
+         const text = await file.text();
+         const parsed = JSON.parse(text);
+ 
+         const rows = Array.isArray(parsed)
+           ? parsed
+           : Array.isArray(parsed.data)
+             ? parsed.data
+             : Array.isArray(parsed.rows)
+               ? parsed.rows
+               : [];
+ 
+         finishLoading(rows, file.name);
+         setUploading(false);
+         input.value = "";
+         return;
+       }
+ 
+       if (extension === "tsv") {
+         parseDelimitedFile(file, "\t");
+         input.value = "";
+         return;
+       }
+ 
+       if (extension === "csv" || extension === "txt") {
+         parseDelimitedFile(file, "");
+         input.value = "";
+         return;
+       }
+ 
+       throw new Error(
+         "Please select a CSV, TSV, JSON, or delimited TXT file."
+       );
+     } catch (error) {
+       console.error("Local file loading error:", error);
+ 
+       alert(
+         error instanceof Error
+           ? error.message
+           : "Pulse could not process this file."
+       );
+ 
+       setUploading(false);
+       input.value = "";
+     }
+   };
+ 
+   return (
+     <label
+       className={`rounded-2xl px-4 py-3 text-sm font-black text-white ${
+         uploading
+           ? "cursor-not-allowed bg-emerald-400"
+           : "cursor-pointer bg-emerald-600 hover:bg-emerald-700"
+       }`}
+     >
+       {uploading ? "Loading..." : "Load Data"}
+ 
+       <input
+         type="file"
+         accept=".csv,.tsv,.json,.txt,text/csv,text/tab-separated-values,application/json,text/plain"
+         onChange={handleFileUpload}
+         disabled={uploading}
+         className="hidden"
+       />
+     </label>
+   );
+ }
 
 export default function PulseIntelligence() {
   const [activeTab, setActiveTab] = useState("Overview");
@@ -1441,173 +4106,98 @@ export default function PulseIntelligence() {
   const [callData, setCallData] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState("");
+  const [historicalComparisonContext, setHistoricalComparisonContext] = useState(null);
+
+  const [executiveBrief, setExecutiveBrief] = useState("");
+  const [showExecutiveBrief, setShowExecutiveBrief] = useState(false);
+  const [briefLoading, setBriefLoading] = useState(false);
+
 
   useEffect(() => {
-    let cancelled = false;
-    let initialLoad = true;
-  
-    const cleanRows = (rows) => {
-      return rows
-        .filter(
-          (row) =>
-            row.Date &&
-            row.Queue &&
-            Number.isFinite(Number(row.Calls)) &&
-            Number(row.Calls) >= 0
-        )
-        .map((row) => ({
-          ...row,
-          Date: String(row.Date).trim(),
-          Queue: String(row.Queue).trim(),
-          CallType: String(
-            row.CallType || row["Call Type"] || "Unknown"
-          ).trim(),
-          Calls: Number(row.Calls) || 0,
-          RepeatCalls: Number(row.RepeatCalls) || 0,
-          ResolvedCalls: Number(row.ResolvedCalls) || 0,
-          Transfers: Number(row.Transfers) || 0,
-          Escalations: Number(row.Escalations) || 0,
-          AverageHandleTime: Number(row.AverageHandleTime) || 0,
-        }));
-    };
-  
-    const loadFallbackData = () => {
-      return new Promise((resolve, reject) => {
-        Papa.parse("/data/AcceleratorDatas.csv", {
-          download: true,
-          header: true,
-          skipEmptyLines: true,
-          dynamicTyping: true,
-          transformHeader: (header) => header.trim(),
-  
-          complete: (results) => {
-            resolve(cleanRows(results.data));
-          },
-  
-          error: reject,
-        });
-      });
-    };
-  
-    const loadSharedData = async () => {
-      if (initialLoad && !cancelled) {
-        setDataLoading(true);
-      }
-  
-      try {
-        const response = await fetch(
-        `/.netlify/functions/get-pulse-data?t=${Date.now()}`,
-          {
-            method: "GET",
-            cache: "no-store",
-            headers: {
-              Accept: "application/json",
-            },
-          }
-        );
-  
-        const responseText = await response.text();
-  
-        let result;
-  
-        try {
-          result = responseText
-            ? JSON.parse(responseText)
-            : {};
-        } catch {
-          throw new Error(
-            "The Netlify function returned HTML instead of JSON."
-          );
-        }
-  
-        if (!response.ok) {
-          throw new Error(
-            result.message ||
-              `The shared data request failed with status ${response.status}.`
-          );
-        }
-  
-        if (cancelled) return;
-  
-        if (
-          result.found === true &&
-          Array.isArray(result.data)
-        ) {
-          setCallData(cleanRows(result.data));
-          setDataError("");
-        } else if (initialLoad) {
-          const fallbackData = await loadFallbackData();
-  
-          if (cancelled) return;
-  
-          setCallData(fallbackData);
-          setDataError("");
-        }
-      } catch (error) {
-        if (cancelled) return;
-  
-        console.error("Shared data loading error:", error);
-  
-        if (initialLoad) {
-          try {
-            const fallbackData = await loadFallbackData();
-  
-            if (cancelled) return;
-  
-            setCallData(fallbackData);
-  
-            setDataError(
-              "The shared data API is unavailable. Displaying demonstration data."
-            );
-          } catch (fallbackError) {
-            console.error(
-              "Fallback CSV loading error:",
-              fallbackError
-            );
-  
-            setCallData([]);
-  
-            setDataError(
-              "The shared data and demonstration data could not be loaded."
-            );
-          }
-        } else {
-          setDataError(
-            "Unable to check for new shared data. Displaying the last successfully loaded dataset."
-          );
-        }
-      } finally {
-        if (!cancelled) {
-          initialLoad = false;
-          setDataLoading(false);
-        }
-      }
-    };
-  
-    loadSharedData();
-  
-    const refreshTimer = window.setInterval(
-      loadSharedData,
-      10000
-    );
-  
-    const handleWindowFocus = () => {
-      loadSharedData();
-    };
-  
-    window.addEventListener("focus", handleWindowFocus);
-  
-    return () => {
-      cancelled = true;
-  
-      window.clearInterval(refreshTimer);
-  
-      window.removeEventListener(
-        "focus",
-        handleWindowFocus
-      );
-    };
-  }, []);
+   let cancelled = false;
+ 
+   const cleanRows = (rows) => {
+     return rows
+       .filter(
+         (row) =>
+           row.Date &&
+           Number.isFinite(Number(row.Calls)) &&
+           Number(row.Calls) >= 0
+       )
+       .map((row) => ({
+         ...row,
+ 
+         Date: String(row.Date).trim(),
+ 
+         Queue: String(
+           row.Queue || "Uncategorized"
+         ).trim(),
+ 
+         CallType: String(
+           row.CallType ||
+             row["Call Type"] ||
+             "Unknown"
+         ).trim(),
+ 
+         Calls: Number(row.Calls) || 0,
+         RepeatCalls: Number(row.RepeatCalls) || 0,
+         ResolvedCalls: Number(row.ResolvedCalls) || 0,
+         Transfers: Number(row.Transfers) || 0,
+         Escalations: Number(row.Escalations) || 0,
+ 
+         AverageHandleTime:
+           Number(row.AverageHandleTime) || 0,
+       }));
+   };
+ 
+   setDataLoading(true);
+ 
+   Papa.parse("/data/AcceleratorDatas.csv", {
+     download: true,
+     header: true,
+     skipEmptyLines: true,
+     dynamicTyping: true,
+     transformHeader: (header) =>
+       String(header).trim(),
+ 
+     complete: (results) => {
+       if (cancelled) return;
+ 
+       const cleanedData = cleanRows(results.data);
+ 
+       setCallData(cleanedData);
+ 
+       setDataError(
+         cleanedData.length > 0
+           ? ""
+           : "The demonstration file did not contain valid rows."
+       );
+ 
+       setDataLoading(false);
+     },
+ 
+     error: (error) => {
+       if (cancelled) return;
+ 
+       console.error(
+         "Demonstration data error:",
+         error
+       );
+ 
+       setCallData([]);
+ 
+       setDataError(
+         "No demonstration data is available. Use Load Data to select a local file."
+       );
+ 
+       setDataLoading(false);
+     },
+   });
+ 
+   return () => {
+     cancelled = true;
+   };
+ }, []);
 
   const theme = useMemo(
     () => ellieThemes[ellieTheme] || ellieThemes.Sage,
@@ -1792,17 +4382,80 @@ export default function PulseIntelligence() {
   
         return {
           ...row,
+
           contacts: row.calls.toLocaleString(),
           repeat: `${repeatRate.toFixed(1)}%`,
           fcr: `${fcr.toFixed(1)}%`,
           transferRate: `${transferRate.toFixed(1)}%`,
           escalationRate: `${escalationRate.toFixed(1)}%`,
           averageHandleTime: averageHandleTime.toFixed(1),
+          
+          repeatRateValue: repeatRate,
+          fcrValue: fcr,
+          transferRateValue: transferRate,
+          escalationRateValue: escalationRate,
+          averageHandleTimeValue: averageHandleTime,
+
           status,
         };
       })
       .sort((a, b) => b.calls - a.calls);
   }, [callData]);
+
+  const dynamicInsights = useMemo(() => {
+   if (dynamicQueueDrivers.length === 0) {
+     return [];
+   }
+ 
+   const highestRepeatDriver = [
+     ...dynamicQueueDrivers,
+   ].sort(
+     (first, second) =>
+       second.repeatRateValue -
+       first.repeatRateValue
+   )[0];
+ 
+   const highestTransferDriver = [
+     ...dynamicQueueDrivers,
+   ].sort(
+     (first, second) =>
+       second.transferRateValue -
+       first.transferRateValue
+   )[0];
+ 
+   const highestVolumeDriver =
+     dynamicQueueDrivers[0];
+ 
+   return [
+     {
+       type: "Customer Friction",
+       title: `${highestRepeatDriver.name} has the highest repeat-contact rate`,
+       text: `${highestRepeatDriver.queue} shows a ${highestRepeatDriver.repeat} repeat-contact rate for ${highestRepeatDriver.name}.`,
+       action: "Investigate journey",
+       icon: AlertTriangle,
+       tone: "amber",
+       prompt: `Analyze repeat contacts for ${highestRepeatDriver.name} in ${highestRepeatDriver.queue}`,
+     },
+     {
+       type: "Operational Signal",
+       title: `${highestTransferDriver.name} has the highest transfer rate`,
+       text: `${highestTransferDriver.transferRate} of contacts for this driver were transferred.`,
+       action: "Review routing",
+       icon: TrendingUp,
+       tone: "blue",
+       prompt: `Explain transfers for ${highestTransferDriver.name} in ${highestTransferDriver.queue}`,
+     },
+     {
+       type: "Volume Opportunity",
+       title: `${highestVolumeDriver.name} is the largest contact driver`,
+       text: `${highestVolumeDriver.contacts} contacts are associated with this customer need.`,
+       action: "Explore root cause",
+       icon: Lightbulb,
+       tone: "green",
+       prompt: `Recommend an action for ${highestVolumeDriver.name} in ${highestVolumeDriver.queue}`,
+     },
+   ];
+ }, [dynamicQueueDrivers]);
 
   const historicalData = useMemo(() => {
     const grouped = {};
@@ -1923,73 +4576,201 @@ export default function PulseIntelligence() {
     if (tab.name !== "Ellie AI") setEllieOpen(false);
   };
 
-  const askEllie = (prompt) => {
-    const lower = prompt.toLowerCase();
-  
-    const topDriver = dynamicQueueDrivers[0];
-  
-    let answer = `The uploaded dataset contains ${calculatedMetrics.totalCalls.toLocaleString()} calls across ${callData.length.toLocaleString()} records.`;
-  
-    if (lower.includes("forecast")) {
-      answer =
-        "Forecasting is now being built from the uploaded dataset. Historical volume has been loaded successfully.";
-    }
-  
-    else if (lower.includes("fcr")) {
-      answer =
-        `Current FCR is ${calculatedMetrics.fcr.toFixed(1)}%, based on ${
-          calculatedMetrics.totalResolved.toLocaleString()
-        } resolved calls out of ${
-          calculatedMetrics.totalCalls.toLocaleString()
-        } total calls.`;
-    }
-  
-    else if (lower.includes("repeat") || lower.includes("driver")) {
-      answer = topDriver
-        ? `${topDriver.name} is currently the largest call driver with ${topDriver.contacts} contacts and a ${topDriver.repeat} repeat-contact rate.`
-        : "No queue driver information is currently available.";
-    }
-  
-    else if (lower.includes("transfer")) {
-      answer =
-        `Current transfer rate is ${calculatedMetrics.transferRate.toFixed(1)}%.`;
-    }
-  
-    else if (lower.includes("executive")) {
-      answer =
-        `Executive Summary:
-  
-  Total Calls: ${calculatedMetrics.totalCalls.toLocaleString()}
-  FCR: ${calculatedMetrics.fcr.toFixed(1)}%
-  Repeat Rate: ${calculatedMetrics.repeatRate.toFixed(1)}%
-  Transfer Rate: ${calculatedMetrics.transferRate.toFixed(1)}%
-  
-  ${
-    topDriver
-      ? `Top Call Driver: ${topDriver.name} (${topDriver.contacts} contacts)`
-      : ""
+  const lastEllieResponseRef = useRef("");
+
+   const chooseResponse = (responses) => {
+   const validResponses =
+    responses.filter(Boolean);
+
+  if (validResponses.length === 0) {
+    return "I could not generate an explanation for that question.";
   }
-  
-  Recommendation:
-  Focus improvement efforts on the highest-volume repeat-contact driver first.`;
+
+  const differentResponses =
+    validResponses.filter(
+      (response) =>
+        response !==
+        lastEllieResponseRef.current
+    );
+
+  const responsePool =
+    differentResponses.length > 0
+      ? differentResponses
+      : validResponses;
+
+  const selectedResponse =
+    responsePool[
+      Math.floor(
+        Math.random() *
+          responsePool.length
+      )
+    ];
+
+  lastEllieResponseRef.current =
+    selectedResponse;
+
+  return selectedResponse;
+};
+
+const analyticsContext = useMemo(
+  () => ({
+    totalRecords: callData.length,
+
+    overallMetrics: {
+      totalCalls:
+        calculatedMetrics.totalCalls,
+      fcr:
+        calculatedMetrics.fcr,
+      repeatRate:
+        calculatedMetrics.repeatRate,
+      transferRate:
+        calculatedMetrics.transferRate,
+      escalationRate:
+        calculatedMetrics.escalationRate,
+      averageHandleTime:
+        calculatedMetrics.averageHandleTime,
+    },
+
+    historicalComparison:
+      historicalComparisonContext,
+
+    topDrivers:
+      dynamicQueueDrivers
+        .slice(0, 5)
+        .map((driver) => ({
+          queue: driver.queue,
+          callType: driver.name,
+          calls: driver.calls,
+          fcr: driver.fcrValue,
+          repeatRate:
+            driver.repeatRateValue,
+          transferRate:
+            driver.transferRateValue,
+          averageHandleTime:
+            driver.averageHandleTimeValue,
+          status: driver.status,
+        })),
+  }),
+  [
+    callData.length,
+    calculatedMetrics,
+    historicalComparisonContext,
+    dynamicQueueDrivers,
+  ]
+);
+
+const generateEllieAnswer =
+  async (prompt) => {
+
+    const response = await fetch(
+      "/.netlify/functions/ellie-ai",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          question: prompt,
+          context: analyticsContext,
+        }),
+      }
+    );
+    
+    const result =
+      await response.json();
+    
+    if (!response.ok) {
+      throw new Error(
+        result.message ||
+          "Ellie could not generate a response."
+      );
     }
-  
+    
+    return result.answer;
+
+};
+
+const generateExecutiveBrief = async () => {
+  if (!historicalComparisonContext) {
+    return;
+  }
+
+  setBriefLoading(true);
+
+  try {
+    const answer =
+      await generateEllieAnswer(
+"Generate a professional executive brief."
+);
+
+    setExecutiveBrief(answer);
+    setShowExecutiveBrief(true);
+
+  } catch (error) {
+    console.error(
+      "Executive brief error:",
+      error
+    );
+  } finally {
+    setBriefLoading(false);
+  }
+};
+
+const askEllie = async (prompt) => {
+  const text = String(prompt || "").trim();
+
+  if (!text) return;
+
+  setEllieOpen(true);
+
+  setMessages((current) => [
+    ...current,
+    {
+      role: "user",
+      text,
+      createdAt: new Date().toISOString(),
+    },
+  ]);
+
+  try {
+    const answer =
+      await generateEllieAnswer(text);
+
     setMessages((current) => [
       ...current,
-      { role: "user", text: prompt },
-      { role: "ellie", text: answer },
+      {
+        role: "ellie",
+        text: answer,
+        createdAt: new Date().toISOString(),
+      },
     ]);
-  
-    setEllieOpen(true);
-  };
+  } catch (error) {
+    console.error(
+      "Ellie response error:",
+      error
+    );
+
+    setMessages((current) => [
+      ...current,
+      {
+        role: "ellie",
+        text:
+          "I could not generate a response right now.",
+        createdAt:
+          new Date().toISOString(),
+      },
+    ]);
+  }
+};
 
   const explainMetric = (metric) => {
-    setMessages((current) => [
-      ...current,
-      { role: "user", text: `Explain ${metric.name}` },
-      { role: "ellie", text: metric.explanation },
-    ]);
-    setEllieOpen(true);
+    if (!metric) return;
+
+    askEllie(
+      metric.explanation ||
+        `Explain ${metric.name}`
+    );
   };
 
   const renderActiveView = () => {
@@ -1997,7 +4778,7 @@ export default function PulseIntelligence() {
       case "Queue Analytics":
         return <QueueAnalyticsView theme={theme} askEllie={askEllie} queueDrivers={dynamicQueueDrivers} />;
       case "Forecasting":
-        return <ForecastingView theme={theme} askEllie={askEllie} forecastData={forecastData} historicalData={historicalData}/>;
+        return <ForecastingView theme={theme} askEllie={askEllie} forecastData={forecastData} callData={callData} setHistoricalComparisonContext={setHistoricalComparisonContext}/>;
       case "Ellie AI":
         return (
           <EllieAIView
@@ -2006,6 +4787,8 @@ export default function PulseIntelligence() {
             outfit={outfit}
             setEllieOpen={setEllieOpen}
             askEllie={askEllie}
+            generateExecutiveBrief={generateExecutiveBrief}
+            briefLoading={briefLoading}
           />
         );
       default:
@@ -2018,6 +4801,7 @@ export default function PulseIntelligence() {
             askEllie={askEllie}
             explainMetric={explainMetric}
             metrics={dynamicMetrics}
+            dynamicInsights={dynamicInsights}
           />
         );
     }
@@ -2079,8 +4863,13 @@ export default function PulseIntelligence() {
               ))}
             </div>
             
-            <UploadDataButton onDataLoaded={setCallData} />
-
+            <UploadDataButton
+  onDataLoaded={(rows) => {
+    setCallData(rows);
+    setDataLoading(false);
+    setDataError("");
+  }}
+/>
               <button
                 type="button"
                 onClick={() => setEllieOpen(true)}
@@ -2129,10 +4918,12 @@ export default function PulseIntelligence() {
         <div className="mt-6 rounded-2xl bg-white p-4">
           <p>Loading: {dataLoading ? "Yes" : "No"}</p>
           <p>Rows Loaded: {callData.length}</p>
-          <p>Error: {dataError || "None"}</p>
+          <p>Status: {dataError || "Data ready"}</p>
 
           <pre>
-            {JSON.stringify(callData[0], null, 2)}
+            {callData.length > 0
+               ? JSON.stringify(callData[0], null, 2)
+               : "No data loaded"}
           </pre>
         </div>
 
@@ -2150,6 +4941,7 @@ export default function PulseIntelligence() {
         setEllieTheme={setEllieTheme}
         outfit={outfit}
         setOutfit={setOutfit}
+        generateEllieAnswer={generateEllieAnswer}
       />
     </div>
   );
