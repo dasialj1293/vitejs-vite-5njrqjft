@@ -1590,9 +1590,22 @@ const parseDashboardDate = (value) => {
    askEllie,
    forecastData,
    callData,
+   setHistoricalComparisonContext,
  }) {
    const [frequency, setFrequency] =
      useState("Daily");
+   
+   const [forecastRange, setForecastRange] =
+      useState("All Data");
+   
+   const [forecastStartDate, setForecastStartDate] =
+      useState("");
+  
+   const [forecastEndDate, setForecastEndDate] =
+      useState("");
+    
+   const [forecastRangeOpen, setForecastRangeOpen] =
+      useState(false);
  
    const [selectedQueue, setSelectedQueue] =
      useState("All Queues");
@@ -1837,13 +1850,169 @@ const parseDashboardDate = (value) => {
    const comparisonExists =
      comparisonMonthRows.length > 0;
  
-   const aggregatedForecastData =
+     const allAggregatedForecastData =
      useMemo(() => {
        return aggregateForecastRows(
          forecastData,
          frequency
        );
      }, [forecastData, frequency]);
+   
+   const forecastDateBounds =
+     useMemo(() => {
+       const validDates =
+         allAggregatedForecastData
+           .map((row) =>
+             parseDashboardDate(row.date)
+           )
+           .filter(Boolean)
+           .sort(
+             (first, second) =>
+               first.getTime() -
+               second.getTime()
+           );
+   
+       if (validDates.length === 0) {
+         return {
+           minimum: "",
+           maximum: "",
+         };
+       }
+   
+       return {
+         minimum: createDateKey(
+           validDates[0]
+         ),
+         maximum: createDateKey(
+           validDates[
+             validDates.length - 1
+           ]
+         ),
+       };
+     }, [allAggregatedForecastData]);
+   
+   useEffect(() => {
+     if (
+       !forecastDateBounds.minimum ||
+       !forecastDateBounds.maximum
+     ) {
+       return;
+     }
+   
+     if (!forecastStartDate) {
+       setForecastStartDate(
+         forecastDateBounds.minimum
+       );
+     }
+   
+     if (!forecastEndDate) {
+       setForecastEndDate(
+         forecastDateBounds.maximum
+       );
+     }
+   }, [
+     forecastDateBounds,
+     forecastStartDate,
+     forecastEndDate,
+   ]);
+   
+   const aggregatedForecastData =
+     useMemo(() => {
+       if (
+         allAggregatedForecastData.length === 0
+       ) {
+         return [];
+       }
+   
+       if (forecastRange === "All Data") {
+         return allAggregatedForecastData;
+       }
+   
+       const maximumDate =
+         parseDashboardDate(
+           forecastDateBounds.maximum
+         );
+   
+       if (!maximumDate) {
+         return allAggregatedForecastData;
+       }
+   
+       let rangeStart = null;
+       let rangeEnd =
+         new Date(maximumDate);
+   
+       if (forecastRange === "Last 30 Days") {
+         rangeStart =
+           new Date(maximumDate);
+   
+         rangeStart.setDate(
+           rangeStart.getDate() - 29
+         );
+       }
+   
+       if (forecastRange === "Last 90 Days") {
+         rangeStart =
+           new Date(maximumDate);
+   
+         rangeStart.setDate(
+           rangeStart.getDate() - 89
+         );
+       }
+   
+       if (forecastRange === "Year to Date") {
+         rangeStart =
+           new Date(
+             maximumDate.getFullYear(),
+             0,
+             1
+           );
+       }
+   
+       if (forecastRange === "Custom Range") {
+         rangeStart =
+           parseDashboardDate(
+             forecastStartDate
+           );
+   
+         rangeEnd =
+           parseDashboardDate(
+             forecastEndDate
+           );
+       }
+   
+       if (!rangeStart || !rangeEnd) {
+         return allAggregatedForecastData;
+       }
+   
+       rangeStart.setHours(0, 0, 0, 0);
+       rangeEnd.setHours(
+         23,
+         59,
+         59,
+         999
+       );
+   
+       return allAggregatedForecastData.filter(
+         (row) => {
+           const rowDate =
+             parseDashboardDate(
+               row.date
+             );
+   
+           return (
+             rowDate &&
+             rowDate >= rangeStart &&
+             rowDate <= rangeEnd
+           );
+         }
+       );
+     }, [
+       allAggregatedForecastData,
+       forecastRange,
+       forecastStartDate,
+       forecastEndDate,
+       forecastDateBounds,
+     ]);
  
    const historicalComparisonChart =
      useMemo(() => {
@@ -1952,6 +2121,85 @@ const parseDashboardDate = (value) => {
        ? selectedMetrics.transferRate -
          comparisonMetrics.transferRate
        : null;
+    
+       useEffect(() => {
+        if (
+          !selectedMonth ||
+          !setHistoricalComparisonContext
+        ) {
+          return;
+        }
+      
+        setHistoricalComparisonContext({
+          queue: selectedQueue,
+      
+          selectedMonth,
+          selectedMonthLabel,
+      
+          comparisonMode,
+          comparisonMonth,
+          comparisonMonthLabel,
+          comparisonExists,
+      
+          selectedMetrics: {
+            calls: selectedMetrics.calls,
+            fcr: selectedMetrics.fcr,
+            repeatRate:
+              selectedMetrics.repeatRate,
+            transferRate:
+              selectedMetrics.transferRate,
+            escalationRate:
+              selectedMetrics.escalationRate,
+            averageHandleTime:
+              selectedMetrics.averageHandleTime,
+            topCallType:
+              selectedMetrics.topCallType,
+            topCallTypeCalls:
+              selectedMetrics.topCallTypeCalls,
+          },
+      
+          comparisonMetrics: {
+            calls: comparisonMetrics.calls,
+            fcr: comparisonMetrics.fcr,
+            repeatRate:
+              comparisonMetrics.repeatRate,
+            transferRate:
+              comparisonMetrics.transferRate,
+            escalationRate:
+              comparisonMetrics.escalationRate,
+            averageHandleTime:
+              comparisonMetrics.averageHandleTime,
+            topCallType:
+              comparisonMetrics.topCallType,
+            topCallTypeCalls:
+              comparisonMetrics.topCallTypeCalls,
+          },
+      
+          changes: {
+            callPercent: callChange,
+            fcrPoints: fcrPointChange,
+            repeatPoints:
+              repeatPointChange,
+            transferPoints:
+              transferPointChange,
+          },
+        });
+      }, [
+        selectedQueue,
+        selectedMonth,
+        selectedMonthLabel,
+        comparisonMode,
+        comparisonMonth,
+        comparisonMonthLabel,
+        comparisonExists,
+        selectedMetrics,
+        comparisonMetrics,
+        callChange,
+        fcrPointChange,
+        repeatPointChange,
+        transferPointChange,
+        setHistoricalComparisonContext,
+      ]);
  
    const projectedRows =
      aggregatedForecastData.filter(
@@ -2140,6 +2388,195 @@ const parseDashboardDate = (value) => {
              </button>
            ))}
          </div>
+        
+         <div className="relative z-30 mt-4 grid gap-3 rounded-[22px] border border-white/80 bg-white/45 p-4 lg:grid-cols-[1fr_auto]">
+  <div>
+    <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+      Timeline
+    </p>
+
+    <div className="relative mt-2 max-w-sm">
+      <button
+        type="button"
+        onClick={() =>
+          setForecastRangeOpen(
+            (current) => !current
+          )
+        }
+        className="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm font-black shadow-sm transition hover:bg-white"
+        style={{
+          color: theme.deep,
+          background: "#f7faf7",
+          border:
+            "1px solid rgba(214,223,216,0.95)",
+        }}
+      >
+        <span>{forecastRange}</span>
+
+        <ChevronDown
+          size={16}
+          className={`transition-transform ${
+            forecastRangeOpen
+              ? "rotate-180"
+              : ""
+          }`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {forecastRangeOpen && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: -8,
+              scale: 0.97,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              scale: 1,
+            }}
+            exit={{
+              opacity: 0,
+              y: -6,
+              scale: 0.97,
+            }}
+            transition={{
+              duration: 0.18,
+            }}
+            className="absolute left-0 top-full z-[9999] mt-2 w-full rounded-2xl p-2 shadow-2xl"
+            style={{
+              background: "#f7faf7",
+              border:
+                "1px solid rgba(214,223,216,0.95)",
+              boxShadow:
+                "0 18px 40px rgba(36,74,53,0.15)",
+            }}
+          >
+            {[
+              "All Data",
+              "Last 30 Days",
+              "Last 90 Days",
+              "Year to Date",
+              "Custom Range",
+            ].map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  setForecastRange(
+                    option
+                  );
+
+                  setForecastRangeOpen(
+                    false
+                  );
+                }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-bold transition hover:bg-[#eef4ef]"
+                style={{
+                  color: theme.deep,
+                  background:
+                    option ===
+                    forecastRange
+                      ? "#dfe8e0"
+                      : "#f7faf7",
+                }}
+              >
+                {option}
+
+                {option ===
+                  forecastRange && (
+                  <CheckCircle2
+                    size={15}
+                    style={{
+                      color:
+                        theme.dark,
+                    }}
+                  />
+                )}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  </div>
+
+  {forecastRange ===
+    "Custom Range" && (
+    <motion.div
+      initial={{
+        opacity: 0,
+        y: 8,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      className="grid gap-3 sm:grid-cols-2"
+    >
+      <div>
+        <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+          Start date
+        </label>
+
+        <input
+          type="date"
+          value={forecastStartDate}
+          min={
+            forecastDateBounds.minimum
+          }
+          max={
+            forecastEndDate ||
+            forecastDateBounds.maximum
+          }
+          onChange={(event) =>
+            setForecastStartDate(
+              event.target.value
+            )
+          }
+          className="w-full rounded-2xl px-4 py-3 text-sm font-black shadow-sm outline-none"
+          style={{
+            color: theme.deep,
+            background: "#f7faf7",
+            border:
+              "1px solid rgba(214,223,216,0.95)",
+          }}
+        />
+      </div>
+
+      <div>
+        <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+          End date
+        </label>
+
+        <input
+          type="date"
+          value={forecastEndDate}
+          min={
+            forecastStartDate ||
+            forecastDateBounds.minimum
+          }
+          max={
+            forecastDateBounds.maximum
+          }
+          onChange={(event) =>
+            setForecastEndDate(
+              event.target.value
+            )
+          }
+          className="w-full rounded-2xl px-4 py-3 text-sm font-black shadow-sm outline-none"
+          style={{
+            color: theme.deep,
+            background: "#f7faf7",
+            border:
+              "1px solid rgba(214,223,216,0.95)",
+          }}
+        />
+      </div>
+    </motion.div>
+  )}
+</div>
  
          <motion.div
   initial={{
@@ -3299,7 +3736,7 @@ placeholder="Choose a comparison"
  }
 
 
-function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie }) {
+function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, generateExecutiveBrief, briefLoading, }) {
   return (
     <motion.section
       key="ellie"
@@ -3363,13 +3800,18 @@ function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie }) {
                 <Sparkles size={16} /> Open Ellie AI
               </button>
               <button
-                type="button"
-                onClick={() => askEllie("Give me the executive summary and recommended action")}
-                className="rounded-2xl border border-white bg-white/70 px-6 py-3 text-sm font-black"
-                style={{ color: theme.dark }}
-              >
-                Generate summary
-              </button>
+  type="button"
+  onClick={generateExecutiveBrief}
+  disabled={briefLoading}
+  className="rounded-2xl border border-white bg-white/70 px-6 py-3 text-sm font-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+  style={{
+    color: theme.dark,
+  }}
+>
+  {briefLoading
+    ? "Generating brief..."
+    : "Generate Full Summary"}
+</button>
             </div>
           </div>
         </div>
@@ -3664,6 +4106,12 @@ export default function PulseIntelligence() {
   const [callData, setCallData] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState("");
+  const [historicalComparisonContext, setHistoricalComparisonContext] = useState(null);
+
+  const [executiveBrief, setExecutiveBrief] = useState("");
+  const [showExecutiveBrief, setShowExecutiveBrief] = useState(false);
+  const [briefLoading, setBriefLoading] = useState(false);
+
 
   useEffect(() => {
    let cancelled = false;
@@ -4164,6 +4612,53 @@ export default function PulseIntelligence() {
   return selectedResponse;
 };
 
+const analyticsContext = useMemo(
+  () => ({
+    totalRecords: callData.length,
+
+    overallMetrics: {
+      totalCalls:
+        calculatedMetrics.totalCalls,
+      fcr:
+        calculatedMetrics.fcr,
+      repeatRate:
+        calculatedMetrics.repeatRate,
+      transferRate:
+        calculatedMetrics.transferRate,
+      escalationRate:
+        calculatedMetrics.escalationRate,
+      averageHandleTime:
+        calculatedMetrics.averageHandleTime,
+    },
+
+    historicalComparison:
+      historicalComparisonContext,
+
+    topDrivers:
+      dynamicQueueDrivers
+        .slice(0, 5)
+        .map((driver) => ({
+          queue: driver.queue,
+          callType: driver.name,
+          calls: driver.calls,
+          fcr: driver.fcrValue,
+          repeatRate:
+            driver.repeatRateValue,
+          transferRate:
+            driver.transferRateValue,
+          averageHandleTime:
+            driver.averageHandleTimeValue,
+          status: driver.status,
+        })),
+  }),
+  [
+    callData.length,
+    calculatedMetrics,
+    historicalComparisonContext,
+    dynamicQueueDrivers,
+  ]
+);
+
 const generateEllieAnswer =
   async (prompt) => {
 
@@ -4177,8 +4672,7 @@ const generateEllieAnswer =
         },
         body: JSON.stringify({
           question: prompt,
-          context:
-            analyticsContext,
+          context: analyticsContext,
         }),
       }
     );
@@ -4195,6 +4689,32 @@ const generateEllieAnswer =
     
     return result.answer;
 
+};
+
+const generateExecutiveBrief = async () => {
+  if (!historicalComparisonContext) {
+    return;
+  }
+
+  setBriefLoading(true);
+
+  try {
+    const answer =
+      await generateEllieAnswer(
+"Generate a professional executive brief."
+);
+
+    setExecutiveBrief(answer);
+    setShowExecutiveBrief(true);
+
+  } catch (error) {
+    console.error(
+      "Executive brief error:",
+      error
+    );
+  } finally {
+    setBriefLoading(false);
+  }
 };
 
 const askEllie = async (prompt) => {
@@ -4258,7 +4778,7 @@ const askEllie = async (prompt) => {
       case "Queue Analytics":
         return <QueueAnalyticsView theme={theme} askEllie={askEllie} queueDrivers={dynamicQueueDrivers} />;
       case "Forecasting":
-        return <ForecastingView theme={theme} askEllie={askEllie} forecastData={forecastData} callData={callData}/>;
+        return <ForecastingView theme={theme} askEllie={askEllie} forecastData={forecastData} callData={callData} setHistoricalComparisonContext={setHistoricalComparisonContext}/>;
       case "Ellie AI":
         return (
           <EllieAIView
@@ -4267,6 +4787,8 @@ const askEllie = async (prompt) => {
             outfit={outfit}
             setEllieOpen={setEllieOpen}
             askEllie={askEllie}
+            generateExecutiveBrief={generateExecutiveBrief}
+            briefLoading={briefLoading}
           />
         );
       default:
