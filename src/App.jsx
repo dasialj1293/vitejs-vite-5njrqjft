@@ -3737,7 +3737,7 @@ placeholder="Choose a comparison"
  }
 
 
-function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, generateExecutiveBrief, briefLoading, executiveBrief, showExecutiveBrief, downloadExecutiveBriefPdf, }) {
+function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, generateExecutiveBrief, briefLoading, executiveBrief, showExecutiveBrief, downloadExecutiveBriefPdf, briefError, }) {
   return (
     <motion.section
       key="ellie"
@@ -3851,6 +3851,11 @@ function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, genera
       Download PDF
     </button>
   )}
+  {briefError && (
+  <div className="mt-4 rounded-2xl bg-rose-50 p-4 text-sm font-bold text-rose-700">
+    {briefError}
+  </div>
+)}
 
 {showExecutiveBrief && (
   <div className="mt-6 rounded-3xl bg-white/70 p-6">
@@ -4165,6 +4170,7 @@ export default function PulseIntelligence() {
   const [executiveBrief, setExecutiveBrief] = useState("");
   const [showExecutiveBrief, setShowExecutiveBrief] = useState(false);
   const [briefLoading, setBriefLoading] = useState(false);
+  const [briefError, setBriefError] = useState("");
 
 
   useEffect(() => {
@@ -4690,7 +4696,7 @@ const analyticsContext = useMemo(
 
     topDrivers:
       dynamicQueueDrivers
-        .slice(0, 5)
+        .slice(0, 3)
         .map((driver) => ({
           queue: driver.queue,
           callType: driver.name,
@@ -4731,62 +4737,91 @@ const generateEllieAnswer =
       }
     );
     
-    const result =
-      await response.json();
-    
-    if (!response.ok) {
-      throw new Error(
-        result.message ||
-          "Ellie could not generate a response."
-      );
-    }
-    
-    return result.answer;
-    };
-
-  const generateExecutiveBrief = async () => {
-  if (!historicalComparisonContext) {
-    return;
-  }
-
-  setBriefLoading(true);
-
+    const responseText =
+    await response.text();
+  
+  let result = null;
+  
   try {
-    const answer =
-      await generateEllieAnswer(`
-      Generate a detailed, full-page executive brief using the historicalComparison data in the supplied Pulse analytics context.
-      
-      Write for customer-service leadership.
-      
-      Include these sections:
-      1. Executive Overview
-      2. Reporting Period and Queue
-      3. Contact Volume Analysis
-      4. First-Call Resolution Performance
-      5. Repeat-Contact and Transfer Trends
-      6. Highest-Volume Contact Driver
-      7. Operational Risks
-      8. Forecast Outlook, only if supported by the supplied context
-      9. Recommend Actions
-      
-      Use complete paragraphs and specific supplied metrics. 
-        Clearly label recommendations as recommendations.
-      Do not invent causes, dates, comparisons, financial impact, 
-        or operational facts that are not in the context.`);
-
-    setExecutiveBrief(answer);
-    console.log(answer);
-    setShowExecutiveBrief(true);
-
-    }  catch (error) {
-    console.error(
-      "Executive brief error:",
-      error
-  );
-    } finally {
-    setBriefLoading(false);
+    result = responseText
+      ? JSON.parse(responseText)
+      : null;
+  } catch {
+    throw new Error(
+      response.status === 504
+        ? "Ellie took too long to generate the report. Please try again."
+        : `Ellie returned an invalid response. Status ${response.status}.`
+    );
   }
+  
+  if (!response.ok) {
+    throw new Error(
+      result?.message ||
+        `Ellie could not generate a response. Status ${response.status}.`
+    );
+  }
+  
+  if (!result?.answer) {
+    throw new Error(
+      "Ellie did not return any report text."
+    );
+  }
+  
+  return result.answer;
 };
+
+  const generateExecutiveBrief =
+  async () => {
+    if (
+      !historicalComparisonContext
+    ) {
+      setBriefError(
+        "Select a month comparison in Historical Analytics first."
+      );
+
+      return;
+    }
+
+    setBriefLoading(true);
+    setBriefError("");
+
+    try {
+      const answer =
+        await generateEllieAnswer(`
+Generate a detailed executive brief using the historical comparison in the supplied Pulse context.
+
+Include:
+Executive Overview
+Reporting Period and Queue
+Contact Volume Analysis
+FCR Performance
+Repeat and Transfer Trends
+Highest-Volume Contact Driver
+Operational Risks
+Forecast Outlook when supported
+Recommended Actions
+
+Use specific supplied metrics. Do not invent facts.
+`);
+
+      setExecutiveBrief(answer);
+      setShowExecutiveBrief(true);
+    } catch (error) {
+      console.error(
+        "Executive brief error:",
+        error
+      );
+
+      setBriefError(
+        error instanceof Error
+          ? error.message
+          : "The executive brief could not be generated."
+      );
+    } finally {
+      setBriefLoading(false);
+    }
+  };
+  
 
 const downloadExecutiveBriefPdf = () => {
   if (!executiveBrief) {
@@ -5145,6 +5180,7 @@ const askEllie = async (prompt) => {
             executiveBrief={executiveBrief}
             showExecutiveBrief={showExecutiveBrief}
             downloadExecutiveBriefPdf={downloadExecutiveBriefPdf}
+            briefError={briefError}
           />
         );
       default:
@@ -5300,5 +5336,5 @@ const askEllie = async (prompt) => {
         generateEllieAnswer={generateEllieAnswer}
       />
     </div>
-  );
-}
+  )}; 
+

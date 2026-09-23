@@ -94,6 +94,17 @@ export default async function handler(
   
               instructions:
                 systemInstructions,
+              
+              reasoning: {
+                effort: "minimal",
+              },
+
+              text: {
+                verbosity: "medium",
+              },
+
+              max_output_tokens: 1800, 
+
   
               input: `
   User question:
@@ -101,9 +112,7 @@ export default async function handler(
   
   Pulse analytics context:
   ${JSON.stringify(
-    context,
-    null,
-    2
+    context
   )}
   `,
             }),
