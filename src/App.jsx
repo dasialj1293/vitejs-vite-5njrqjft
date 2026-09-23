@@ -3800,6 +3800,24 @@ function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, genera
               >
                 <Sparkles size={16} /> Open Ellie AI
               </button>
+              {showExecutiveBrief && (
+  <div
+    className="mt-6 rounded-3xl bg-white/70 p-6"
+  >
+    <h3
+      className="mb-4 text-xl font-black"
+      style={{
+        color: theme.deep,
+      }}
+    >
+      Executive Brief
+    </h3>
+
+    <div className="whitespace-pre-wrap text-sm text-[#66766d]">
+      {executiveBrief}
+    </div>
+  </div>
+)}
               <button
   type="button"
   onClick={generateExecutiveBrief}
@@ -4757,6 +4775,7 @@ const generateEllieAnswer =
         or operational facts that are not in the context.`);
 
     setExecutiveBrief(answer);
+    console.log(answer);
     setShowExecutiveBrief(true);
 
     }  catch (error) {
