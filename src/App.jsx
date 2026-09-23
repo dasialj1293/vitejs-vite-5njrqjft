@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Papa from "papaparse"; 
 import CountUp from "react-countup";
+import { jsPDF } from "jspdf";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Activity,
@@ -3736,7 +3737,7 @@ placeholder="Choose a comparison"
  }
 
 
-function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, generateExecutiveBrief, briefLoading, }) {
+function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, generateExecutiveBrief, briefLoading, executiveBrief, showExecutiveBrief, downloadExecutiveBriefPdf, }) {
   return (
     <motion.section
       key="ellie"
@@ -3812,6 +3813,41 @@ function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, genera
     ? "Generating brief..."
     : "Generate Full Summary"}
 </button>
+
+{showExecutiveBrief &&
+  executiveBrief && (
+    <button
+      type="button"
+      onClick={
+        downloadExecutiveBriefPdf
+      }
+      className="inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5"
+      style={{
+        background: theme.dark,
+      }}
+    >
+      <ArrowUpRight
+        size={16}
+      />
+
+      Download PDF
+    </button>
+  )}
+
+{showExecutiveBrief && (
+  <div className="mt-6 rounded-3xl bg-white/70 p-6">
+    <h3
+      className="mb-4 text-xl font-black"
+      style={{ color: theme.deep }}
+    >
+      Executive Brief
+    </h3>
+
+    <div className="whitespace-pre-wrap text-sm">
+      {executiveBrief}
+    </div>
+  </div>
+)}
             </div>
           </div>
         </div>
@@ -4733,6 +4769,288 @@ const generateEllieAnswer =
   }
 };
 
+const downloadExecutiveBriefPdf = () => {
+  if (!executiveBrief) {
+    console.error(
+      "No executive brief is available to download."
+    );
+
+    return;
+  }
+
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  const pageWidth =
+    pdf.internal.pageSize.getWidth();
+
+  const pageHeight =
+    pdf.internal.pageSize.getHeight();
+
+  const leftMargin = 20;
+  const rightMargin = 20;
+  const topMargin = 22;
+  const bottomMargin = 20;
+
+  const contentWidth =
+    pageWidth -
+    leftMargin -
+    rightMargin;
+
+  const comparison =
+    historicalComparisonContext;
+
+  const primaryLabel =
+    comparison?.selectedMonthLabel ||
+    "Selected Period";
+
+  const comparisonLabel =
+    comparison?.comparisonExists
+      ? comparison.comparisonMonthLabel
+      : "No Comparison";
+
+  const queue =
+    comparison?.queue ||
+    "All Queues";
+
+  const safeFileName = String(
+    `Pulse_Executive_Brief_${primaryLabel}`
+  )
+    .replace(/[^a-z0-9-_]+/gi, "_")
+    .replace(/_+/g, "_");
+
+  const addPageHeader = () => {
+    pdf.setFillColor(49, 95, 67);
+
+    pdf.rect(
+      0,
+      0,
+      pageWidth,
+      17,
+      "F"
+    );
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(10);
+
+    pdf.text(
+      "PULSE INTELLIGENCE",
+      leftMargin,
+      11
+    );
+
+    pdf.setTextColor(36, 74, 53);
+  };
+
+  addPageHeader();
+
+  let currentY = topMargin + 7;
+
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(22);
+  pdf.setTextColor(36, 74, 53);
+
+  pdf.text(
+    "Executive Brief",
+    leftMargin,
+    currentY
+  );
+
+  currentY += 10;
+
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.setTextColor(90, 108, 98);
+
+  pdf.text(
+    `Queue: ${queue}`,
+    leftMargin,
+    currentY
+  );
+
+  currentY += 6;
+
+  pdf.text(
+    `Reporting period: ${primaryLabel}`,
+    leftMargin,
+    currentY
+  );
+
+  currentY += 6;
+
+  pdf.text(
+    `Comparison period: ${comparisonLabel}`,
+    leftMargin,
+    currentY
+  );
+
+  currentY += 10;
+
+  pdf.setDrawColor(210, 220, 213);
+
+  pdf.line(
+    leftMargin,
+    currentY,
+    pageWidth - rightMargin,
+    currentY
+  );
+
+  currentY += 9;
+
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(11);
+  pdf.setTextColor(53, 84, 67);
+
+  const normalizedBrief =
+    String(executiveBrief)
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .trim();
+
+  const paragraphs =
+    normalizedBrief.split(/\n+/);
+
+  paragraphs.forEach((paragraph) => {
+    const cleanedParagraph =
+      paragraph.trim();
+
+    if (!cleanedParagraph) {
+      currentY += 3;
+      return;
+    }
+
+    const looksLikeHeading =
+      cleanedParagraph.length <= 65 &&
+      (
+        /^[0-9]+\./.test(
+          cleanedParagraph
+        ) ||
+        cleanedParagraph.endsWith(":") ||
+        [
+          "Executive Overview",
+          "Reporting Period and Queue",
+          "Contact Volume Analysis",
+          "First-Call Resolution Performance",
+          "Repeat-Contact and Transfer Trends",
+          "Highest-Volume Contact Driver",
+          "Operational Risks",
+          "Forecast Outlook",
+          "Recommended Actions",
+        ].some((heading) =>
+          cleanedParagraph
+            .toLowerCase()
+            .includes(
+              heading.toLowerCase()
+            )
+        )
+      );
+
+    pdf.setFont(
+      "helvetica",
+      looksLikeHeading
+        ? "bold"
+        : "normal"
+    );
+
+    pdf.setFontSize(
+      looksLikeHeading
+        ? 13
+        : 11
+    );
+
+    pdf.setTextColor(
+      looksLikeHeading
+        ? 36
+        : 53,
+      looksLikeHeading
+        ? 74
+        : 84,
+      looksLikeHeading
+        ? 53
+        : 67
+    );
+
+    const wrappedLines =
+      pdf.splitTextToSize(
+        cleanedParagraph,
+        contentWidth
+      );
+
+    const lineHeight =
+      looksLikeHeading
+        ? 6.5
+        : 5.5;
+
+    wrappedLines.forEach((line) => {
+      if (
+        currentY + lineHeight >
+        pageHeight - bottomMargin
+      ) {
+        pdf.addPage();
+        addPageHeader();
+
+        currentY =
+          topMargin + 5;
+
+        pdf.setFont(
+          "helvetica",
+          looksLikeHeading
+            ? "bold"
+            : "normal"
+        );
+
+        pdf.setFontSize(
+          looksLikeHeading
+            ? 13
+            : 11
+        );
+
+        pdf.setTextColor(
+          looksLikeHeading
+            ? 36
+            : 53,
+          looksLikeHeading
+            ? 74
+            : 84,
+          looksLikeHeading
+            ? 53
+            : 67
+        );
+      }
+
+      pdf.text(
+        line,
+        leftMargin,
+        currentY
+      );
+
+      currentY += lineHeight;
+    });
+
+    currentY +=
+      looksLikeHeading
+        ? 3
+        : 4;
+  });
+
+  pdf.setFontSize(8);
+  pdf.setTextColor(120, 135, 126);
+
+  pdf.text(
+    "Generated by Ellie AI in Pulse Intelligence",
+    leftMargin,
+    pageHeight - 10
+  );
+
+  pdf.save(
+    `${safeFileName}.pdf`
+  );
+};
+
 const askEllie = async (prompt) => {
   const text = String(prompt || "").trim();
 
@@ -4805,6 +5123,9 @@ const askEllie = async (prompt) => {
             askEllie={askEllie}
             generateExecutiveBrief={generateExecutiveBrief}
             briefLoading={briefLoading}
+            executiveBrief={executiveBrief}
+            showExecutiveBrief={showExecutiveBrief}
+            downloadExecutiveBriefPdf={downloadExecutiveBriefPdf}
           />
         );
       default:
