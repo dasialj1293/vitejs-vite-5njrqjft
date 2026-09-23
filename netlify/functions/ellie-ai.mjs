@@ -3,7 +3,9 @@ export default async function handler(
   ) {
     const headers = {
       "Content-Type":
-        "application/json",
+        "application/json; charset=utf-8",
+      "X-Content-Type-Options":
+        "nosniff",
     };
   
     if (request.method !== "POST") {
@@ -62,9 +64,12 @@ export default async function handler(
   - If the context cannot answer the question, explain what data is missing.
   - Use a conversational, confident, and approachable voice.
   - Keep routine answers concise.
-  - Use bullets only when bullets genuinely improve readability.
-  - When discussing FCR, repeat rate, transfers, escalations, or handle time, include the relevant values.
-  - When making recommendations, connect the recommendation to evidence in the supplied context.
+  - When the user requests an executive brief, full summary, report, or leadership summary, provide a detailed report
+      with clear section headings and multiple substantivr paragraphs.
+  - For an executive brief, include an Executive Overview, Reporting Period, Performance Analysis, Key Findings,
+      Operational Risks, Forecast Outlook when forecast data is available, and Recommended Actions.
+  - Do not invent a comparison period or metric that is absent from the supplied context. 
+
   `;
   
       const aiResponse =
@@ -89,10 +94,6 @@ export default async function handler(
   
               instructions:
                 systemInstructions,
-              
-              reasoning: {
-                effort: "minimal",
-              },
   
               input: `
   User question:
@@ -105,8 +106,6 @@ export default async function handler(
     2
   )}
   `,
-
-              max_output_tokens: 1200, 
             }),
           }
         );
@@ -132,44 +131,24 @@ export default async function handler(
         );
       }
   
-      const textParts = [];
-
-for (const item of aiResult.output || []) {
-  if (item.type !== "message") {
-    continue;
-  }
-
-  for (const content of item.content || []) {
-    if (
-      content.type === "output_text" &&
-      typeof content.text === "string"
-    ) {
-      textParts.push(content.text);
-    }
-  }
-}
-
-const answer = textParts.join("\n").trim();
-
-if (!answer) {
-  console.error(
-    "FULL OPENAI RESPONSE:",
-    JSON.stringify(aiResult, null, 2)
-  );
-
-  throw new Error(
-    `OpenAI returned no visible text. ` +
-    `Status: ${aiResult.status || "unknown"}. ` +
-    `Reason: ${
-      aiResult.incomplete_details?.reason || "none"
-    }. ` +
-    `Output types: ${
-      (aiResult.output || [])
-        .map((item) => item.type)
-        .join(", ") || "none"
-    }.`
-  );
-}
+      const answer =
+        aiResult.output_text ||
+        aiResult.output
+          ?.flatMap(
+            (item) =>
+              item.content || []
+          )
+          ?.find(
+            (item) =>
+              item.type ===
+              "output_text"
+          )?.text;
+  
+      if (!answer) {
+        throw new Error(
+          "The AI service did not return an answer."
+        );
+      }
   
       return new Response(
         JSON.stringify({
