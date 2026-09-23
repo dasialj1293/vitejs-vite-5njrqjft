@@ -132,28 +132,44 @@ export default async function handler(
         );
       }
   
-      const answer =
-        aiResult.output_text ||
-        aiResult.output
-          ?.flatMap(
-            (item) =>
-              item.content || []
-          )
-          ?.find(
-            (item) =>
-              item.type ===
-              "output_text"
-          )?.text;
-  
-      if (!answer) {
-        throw new Error(
-          `The AI service did not return visible text.` +
-          `Status: ${aiResult.status || "unknown"}. ` +
-          `Incomplete reason: ${
-            aiResult.incomplete_details?.reason || "none"
-          }.`
-        );
-      }
+      const textParts = [];
+
+for (const item of aiResult.output || []) {
+  if (item.type !== "message") {
+    continue;
+  }
+
+  for (const content of item.content || []) {
+    if (
+      content.type === "output_text" &&
+      typeof content.text === "string"
+    ) {
+      textParts.push(content.text);
+    }
+  }
+}
+
+const answer = textParts.join("\n").trim();
+
+if (!answer) {
+  console.error(
+    "FULL OPENAI RESPONSE:",
+    JSON.stringify(aiResult, null, 2)
+  );
+
+  throw new Error(
+    `OpenAI returned no visible text. ` +
+    `Status: ${aiResult.status || "unknown"}. ` +
+    `Reason: ${
+      aiResult.incomplete_details?.reason || "none"
+    }. ` +
+    `Output types: ${
+      (aiResult.output || [])
+        .map((item) => item.type)
+        .join(", ") || "none"
+    }.`
+  );
+}
   
       return new Response(
         JSON.stringify({
