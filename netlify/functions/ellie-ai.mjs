@@ -101,6 +101,8 @@ export default async function handler(
     2
   )}
   `,
+
+              max_output_tokens: 900, 
             }),
           }
         );
