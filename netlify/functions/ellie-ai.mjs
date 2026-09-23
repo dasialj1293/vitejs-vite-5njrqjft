@@ -59,6 +59,7 @@ export default async function handler(
   Requirements:
   - Generate a fresh response for each question.
   - Do not use rigid or prewritten templates.
+  - Do not make the summary very lengthy a maximum of 4 paragraphs so it is not 
   - Do not invent metrics, dates, queues, contact types, causes, or forecasts.
   - Clearly distinguish between facts shown in the context and recommendations.
   - If the context cannot answer the question, explain what data is missing.
