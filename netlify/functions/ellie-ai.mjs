@@ -89,6 +89,10 @@ export default async function handler(
   
               instructions:
                 systemInstructions,
+              
+              reasoning: {
+                effort: "minimal",
+              },
   
               input: `
   User question:
@@ -102,7 +106,7 @@ export default async function handler(
   )}
   `,
 
-              max_output_tokens: 900, 
+              max_output_tokens: 1200, 
             }),
           }
         );
@@ -143,7 +147,11 @@ export default async function handler(
   
       if (!answer) {
         throw new Error(
-          "The AI service did not return an answer."
+          `The AI service did not return visible text.` +
+          `Status: ${aiResult.status || "unknown"}. ` +
+          `Incomplete reason: ${
+            aiResult.incomplete_details?.reason || "none"
+          }.`
         );
       }
   
