@@ -3850,6 +3850,7 @@ placeholder="Choose a comparison"
           Leadership reporting and monthly insights.
         </p>
 
+        
         <div className="mt-6 flex gap-3">
           <button
             onClick={generateExecutiveBrief}
@@ -3981,11 +3982,11 @@ placeholder="Choose a comparison"
 <p className="mt-2 text-sm">
   FCR:
   {
-    historicalComparisonContext
-      ?.selectedMetrics
-      ?.fcr
-      ?.toFixed(1)
-  }%
+    historicalComparisonContext?.selectedMetrics?.fcr != null
+      ? historicalComparisonContext.selectedMetrics.fcr.toFixed(1)
+      : "N/A"
+  }
+  %
 </p>
     <div className="flex items-center justify-between">
 
