@@ -1656,7 +1656,6 @@ const parseDashboardDate = (value) => {
        ).sort(),
      ];
    }, [callData]);
- 
    const filteredCallData = useMemo(() => {
      if (
        selectedQueue ===
@@ -3869,17 +3868,6 @@ placeholder="Choose a comparison"
   </GlassCard>
 )}
 
-        {executiveBrief && (
-          <div className="mt-6 rounded-3xl bg-white/70 p-6">
-            <h3 className="mb-4 text-xl font-black">
-              Current Executive Summary
-            </h3>
-
-            <div className="max-h-[500px] overflow-y-auto whitespace-pre-wrap">
-              {executiveBrief}
-            </div>
-          </div>
-        )}
       </GlassCard>
     </motion.section>
   );
@@ -3948,24 +3936,6 @@ function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, genera
               >
                 <Sparkles size={16} /> Open Ellie AI
               </button>
-              {showExecutiveBrief && (
-  <div
-    className="mt-6 rounded-3xl bg-white/70 p-6"
-  >
-    <h3
-      className="mb-4 text-xl font-black"
-      style={{
-        color: theme.deep,
-      }}
-    >
-      Executive Brief
-    </h3>
-
-    <div className="whitespace-pre-wrap text-sm text-[#66766d]">
-      {executiveBrief}
-    </div>
-  </div>
-)}
               <button
   type="button"
   onClick={generateExecutiveBrief}
@@ -3979,44 +3949,9 @@ function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, genera
     ? "Generating brief..."
     : "Generate Full Summary"}
 </button>
-
-{showExecutiveBrief &&
-  executiveBrief && (
-    <button
-      type="button"
-      onClick={
-        downloadExecutiveBriefPdf
-      }
-      className="inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5"
-      style={{
-        background: theme.dark,
-      }}
-    >
-      <ArrowUpRight
-        size={16}
-      />
-
-      Download PDF
-    </button>
-  )}
   {briefError && (
   <div className="mt-4 rounded-2xl bg-rose-50 p-4 text-sm font-bold text-rose-700">
     {briefError}
-  </div>
-)}
-
-{showExecutiveBrief && (
-  <div className="mt-6 rounded-3xl bg-white/70 p-6">
-    <h3
-      className="mb-4 text-xl font-black"
-      style={{ color: theme.deep }}
-    >
-      Executive Brief
-    </h3>
-
-    <div className="whitespace-pre-wrap text-sm">
-      {executiveBrief}
-    </div>
   </div>
 )}
             </div>
