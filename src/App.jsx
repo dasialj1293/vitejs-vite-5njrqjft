@@ -3817,6 +3817,7 @@ placeholder="Choose a comparison"
   briefLoading,
   downloadExecutiveBriefPdf,
   historicalComparisonContext,
+  savedReports,
 }) {
   return (
     <motion.section
@@ -3861,6 +3862,23 @@ placeholder="Choose a comparison"
               ? "Generating..."
               : "Generate Monthly Summary"}
           </button>
+
+          <details className="mt-6">
+  <summary className="cursor-pointer font-black">
+    Report History
+  </summary>
+
+  <div className="mt-3 space-y-2">
+    {savedReports.map((report) => (
+      <button
+        key={report.id}
+        className="block w-full rounded-xl bg-white p-3 text-left"
+      >
+        {report.month}
+      </button>
+    ))}
+  </div>
+</details>
 
           {executiveBrief && (
             <button
@@ -3922,12 +3940,53 @@ placeholder="Choose a comparison"
           </GlassCard>
 
         </div>
+        
+        {executiveBrief && (
+  <button
+    onClick={() =>
+      setBriefExpanded(!briefExpanded)
+    }
+    className="mt-6 rounded-2xl bg-white px-4 py-3 font-black"
+  >
+    {briefExpanded
+      ? "Hide Summary"
+      : "View Full Summary"}
+  </button>
+)}
 
         {executiveBrief && (
   <GlassCard
     theme={theme}
     className="mt-6 p-6"
   >
+  
+  <h3 className="font-black">
+  Executive Snapshot
+</h3>
+
+<p className="mt-2 text-sm">
+  Volume:
+  {historicalComparisonContext?.changes?.callPercent?.toFixed(1)}%
+</p>
+
+<p className="mt-2 text-sm">
+  Top Driver:
+  {
+    historicalComparisonContext
+      ?.selectedMetrics
+      ?.topCallType
+  }
+</p>
+
+<p className="mt-2 text-sm">
+  FCR:
+  {
+    historicalComparisonContext
+      ?.selectedMetrics
+      ?.fcr
+      ?.toFixed(1)
+  }%
+</p>
     <div className="flex items-center justify-between">
 
       <div>
@@ -4247,6 +4306,8 @@ export default function PulseIntelligence() {
   const [showExecutiveBrief, setShowExecutiveBrief] = useState(false);
   const [briefLoading, setBriefLoading] = useState(false);
   const [briefError, setBriefError] = useState("");
+  const [savedReports, setSavedReports] = useState([]);
+  const [briefExpanded, setBriefExpanded] = useState(false);
 
 
   useEffect(() => {
@@ -4884,6 +4945,16 @@ Do not generate appendices, notes, limitations, or methodology sections.
 `);
 
       setExecutiveBrief(answer);
+      setSavedReports((current) => [
+        {
+          id: Date.now(),
+          month:
+            historicalComparisonContext
+              ?.selectedMonthLabel,
+          report: answer,
+        },
+        ...current,
+      ]);
       setShowExecutiveBrief(true);
     } catch (error) {
       console.error(
@@ -5261,6 +5332,7 @@ const askEllie = async (prompt) => {
               historicalComparisonContext={
                 historicalComparisonContext
               }
+              savedReports={savedReports}
             />
           );
       default:
@@ -5312,16 +5384,37 @@ const askEllie = async (prompt) => {
               <p className="text-xs text-[#718178]">Customer experience command center</p>
             </div>
           </div>
+        
+          <div className="flex flex-wrap items-center gap-3">
 
-          
-            
-            <UploadDataButton
+<div className="rounded-2xl bg-white/60 px-4 py-3 shadow-sm">
+  <p className="text-[10px] font-black uppercase">
+    Records
+  </p>
+
+  <p className="text-sm font-black">
+    {callData.length.toLocaleString()}
+  </p>
+</div>
+
+<div className="rounded-2xl bg-white/60 px-4 py-3 shadow-sm">
+  <p className="text-[10px] font-black uppercase">
+    Insights
+  </p>
+
+  <p className="text-sm font-black">
+    {dynamicInsights.length}
+  </p>
+</div>
+
+<UploadDataButton
   onDataLoaded={(rows) => {
     setCallData(rows);
     setDataLoading(false);
     setDataError("");
   }}
 />
+</div>
     
         
         </header>
@@ -5362,7 +5455,7 @@ const askEllie = async (prompt) => {
 </AnimatePresence>
 
         <footer className="py-7 text-center text-xs text-[#74857b]">
-          Pulse Accelerator Prototype · Synthetic demonstration data · Last 30 days
+          This is the prototype containing synthetic data. 
         </footer>
       </main>
 
