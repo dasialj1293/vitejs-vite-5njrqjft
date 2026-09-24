@@ -117,13 +117,14 @@ function GlassCard({ children, className = "", theme }) {
 function EllieRobot({
   size = 72,
   waving = false,
-  mood = "happy",
+  mood = "happy", 
   themeName = "Sage",
   outfit = "Classic",
 }) {
   const c = ellieThemes[themeName] || ellieThemes.Sage;
   const isThinking = mood === "thinking";
   const isExcited = mood === "excited";
+  const isWinking = mood === "wink";
 
   return (
     <motion.div
@@ -182,16 +183,40 @@ function EllieRobot({
           </>
         ) : (
           <>
-            <motion.div
-              className="absolute left-[21%] top-[31%] h-[9%] w-[15%] rounded-t-full border-t-[4px] border-[#17372a]"
-              animate={{ scaleY: [1, 1, 0.15, 1, 1] }}
-              transition={{ duration: 4.5, repeat: Infinity }}
-            />
-            <motion.div
-              className="absolute right-[21%] top-[31%] h-[9%] w-[15%] rounded-t-full border-t-[4px] border-[#17372a]"
-              animate={{ scaleY: [1, 1, 0.15, 1, 1] }}
-              transition={{ duration: 4.5, repeat: Infinity }}
-            />
+            {isWinking ? (
+  <>
+    <div
+  className="absolute left-[21%] top-[34%] h-[4px] w-[18px] rounded-full bg-[#17372a]"
+  animate={{
+    opacity: [1, 1, 0, 1, 1]
+  }}
+  transition={{
+    duration: 4,
+    repeat: Infinity
+  }}
+/>
+
+    <motion.div
+      className="absolute right-[21%] top-[31%] h-[9%] w-[15%] rounded-t-full border-t-[4px] border-[#17372a]"
+      animate={{ scaleY: [1, 1, 0.15, 1, 1] }}
+      transition={{ duration: 4.5, repeat: Infinity }}
+    />
+  </>
+) : (
+  <>
+    <motion.div
+      className="absolute left-[21%] top-[31%] h-[9%] w-[15%] rounded-t-full border-t-[4px] border-[#17372a]"
+      animate={{ scaleY: [1, 1, 0.15, 1, 1] }}
+      transition={{ duration: 4.5, repeat: Infinity }}
+    />
+
+    <motion.div
+      className="absolute right-[21%] top-[31%] h-[9%] w-[15%] rounded-t-full border-t-[4px] border-[#17372a]"
+      animate={{ scaleY: [1, 1, 0.15, 1, 1] }}
+      transition={{ duration: 4.5, repeat: Infinity }}
+    />
+  </>
+)} 
             <div className="absolute left-1/2 top-[41%] h-[12%] w-[15%] -translate-x-1/2 rounded-b-full bg-[#ef668d] shadow-inner">
               <div className="mx-auto mt-[7%] h-[22%] w-[47%] rounded-full bg-white" />
             </div>
@@ -768,14 +793,60 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
           >
             <div>
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[.18em] text-white/65">
-                <Sparkles size={14} /> Today’s intelligence brief
+                <Sparkles size={14} /> Meet Ellie 
               </div>
               <h2 className="mt-3 max-w-3xl text-3xl font-black">
-                Credit repeat contacts are growing faster than volume.
+                Your AI assistant for customer experience insights.
               </h2>
+
+              <div className="mt-5 flex flex-wrap gap-3">
+
+  <button
+    type="button"
+    onClick={() =>
+      askEllie("Explain FCR")
+    }
+    className="rounded-2xl px-4 py-3 text-sm font-black text-white"
+    style={{
+      background: theme.dark,
+    }}
+  >
+    Explain FCR
+  </button>
+
+  <button
+    type="button"
+    onClick={() =>
+      askEllie("Identify top risks")
+    }
+    className="rounded-2xl px-4 py-3 text-sm font-black text-white"
+    style={{
+      background: theme.dark,
+    }}
+  >
+    Top Risks
+  </button>
+
+  <button
+    type="button"
+    onClick={() =>
+      askEllie(
+        "Generate leadership talking points"
+      )
+    }
+    className="rounded-2xl px-4 py-3 text-sm font-black text-white"
+    style={{
+      background: theme.dark,
+    }}
+  >
+    Talking Points
+  </button>
+
+</div>
+
+
               <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">
-                Payment arrangements are the largest visible driver. Ellie can explain the signal
-                and connect users to the supporting queue insight.
+                Ask questions, explore forecasts, understand risks, generate leadership summaries, and identify opportunities to improve customer experience.
               </p>
               <button
                 type="button"
@@ -835,6 +906,8 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
           ))}
         </div>
       </div>
+    
+      
     </motion.section>
   );
 }
@@ -1656,6 +1729,8 @@ const parseDashboardDate = (value) => {
        ).sort(),
      ];
    }, [callData]);
+
+
    const filteredCallData = useMemo(() => {
      if (
        selectedQueue ===
@@ -2274,20 +2349,20 @@ const parseDashboardDate = (value) => {
    };
  
    const formatChange = (
-     value,
-     suffix = "%"
-   ) => {
-     if (
-       value === null ||
-       !Number.isFinite(value)
-     ) {
-       return "No comparison";
-     }
- 
-     return `${
-       value >= 0 ? "+" : ""
-     }${value.toFixed(1)}${suffix}`;
-   };
+    value,
+    suffix = "%"
+  ) => {
+    if (
+      value === null ||
+      !Number.isFinite(value)
+    ) {
+      return "No comparison";
+    }
+  
+    return `${
+      value >= 0 ? "↑ " : "↓ "
+    }${Math.abs(value).toFixed(1)}${suffix}`;
+  };
  
    return (
      <motion.section
@@ -3420,9 +3495,9 @@ placeholder="Choose a comparison"
                            type="monotone"
                            dataKey="comparison"
                            name={comparisonMonthLabel}
-                           stroke={theme.accent}
+                           stroke="#b9862f"
                            strokeWidth={3}
-                           strokeDasharray="7 6"
+                           strokeDasharray=""
                            fill="transparent"
                            connectNulls={false}
                            isAnimationActive
@@ -3741,6 +3816,7 @@ placeholder="Choose a comparison"
   generateExecutiveBrief,
   briefLoading,
   downloadExecutiveBriefPdf,
+  historicalComparisonContext,
 }) {
   return (
     <motion.section
@@ -3748,12 +3824,26 @@ placeholder="Choose a comparison"
       animate={{ opacity: 1 }}
     >
       <GlassCard
+  className="mb-6 p-6"
+  theme={theme}
+>
+  <h1
+    className="text-4xl font-black"
+    style={{ color: theme.deep }}
+  >
+    Executive Insights
+  </h1>
+
+  <p className="mt-2 text-[#66766d]">
+    Monthly reporting, leadership insights, forecasting, and AI-generated summaries.
+  </p>
+</GlassCard>
+
+      <GlassCard
         className="p-6"
         theme={theme}
       >
-        <h2 className="text-3xl font-black">
-          Executive Center
-        </h2>
+       
 
         <p className="mt-2 text-sm text-[#66766d]">
           Leadership reporting and monthly insights.
@@ -3774,9 +3864,7 @@ placeholder="Choose a comparison"
 
           {executiveBrief && (
             <button
-              onClick={
-                downloadExecutiveBriefPdf
-              }
+              onClick={downloadExecutiveBriefPdf}
               className="rounded-2xl bg-white px-6 py-3 font-black"
             >
               Download PDF
@@ -3786,62 +3874,66 @@ placeholder="Choose a comparison"
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
 
-  <GlassCard
-    theme={theme}
-    className="p-5"
-  >
-    <h3 className="text-sm font-black">
-      Current Report
-    </h3>
+          <GlassCard
+            theme={theme}
+            className="p-5"
+          >
+            <h3 className="text-sm font-black">
+              Current Report
+            </h3>
 
-    <p className="mt-2 text-xs text-[#6e7d74]">
-      September 2026
-    </p>
+            <p className="mt-2 text-xs text-[#6e7d74]">
+              {historicalComparisonContext?.selectedMonthLabel ||
+                "No report generated"}
+            </p>
 
-    <p className="mt-3 text-sm">
-      Latest executive summary.
-    </p>
-  </GlassCard>
+            <p className="mt-3 text-sm">
+              Latest executive summary.
+            </p>
+          </GlassCard>
 
-  <GlassCard
-    theme={theme}
-    className="p-5"
-  >
-    <h3 className="text-sm font-black">
-      Key Risk
-    </h3>
+          <GlassCard
+            theme={theme}
+            className="p-5"
+          >
+            <h3 className="text-sm font-black">
+              Key Risk
+            </h3>
 
-    <p className="mt-3 text-sm">
-      Billing volume changes require validation.
-    </p>
-  </GlassCard>
+            <p className="mt-3 text-sm">
+              {historicalComparisonContext?.changes?.callPercent < -20
+                ? "Significant volume decline requires investigation."
+                : "No major month-over-month risk detected."}
+            </p>
+          </GlassCard>
 
-  <GlassCard
-    theme={theme}
-    className="p-5"
-  >
-    <h3 className="text-sm font-black">
-      Top Driver
-    </h3>
+          <GlassCard
+            theme={theme}
+            className="p-5"
+          >
+            <h3 className="text-sm font-black">
+              Top Driver
+            </h3>
 
-    <p className="mt-3 text-sm">
-      Bill Explanation
-    </p>
-  </GlassCard>
+            <p className="mt-3 text-sm">
+              {historicalComparisonContext?.selectedMetrics?.topCallType ||
+                "No driver available"}
+            </p>
+          </GlassCard>
 
-</div>
+        </div>
 
-{executiveBrief && (
+        {executiveBrief && (
   <GlassCard
     theme={theme}
     className="mt-6 p-6"
   >
-
     <div className="flex items-center justify-between">
 
       <div>
         <h2 className="text-2xl font-black">
-          September Executive Summary
+          {historicalComparisonContext?.selectedMonthLabel ||
+            "Executive Summary"}
         </h2>
 
         <p className="text-sm text-[#6e7d74]">
@@ -3873,89 +3965,6 @@ placeholder="Choose a comparison"
   );
 }
 
-function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, generateExecutiveBrief, briefLoading, executiveBrief, showExecutiveBrief, downloadExecutiveBriefPdf, briefError, }) {
-  return (
-    <motion.section
-      key="ellie"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.3 }}
-    >
-      <GlassCard className="overflow-hidden p-1" theme={theme}>
-        <div
-          className="grid gap-8 rounded-[25px] p-7 lg:grid-cols-[240px_1fr]"
-          style={{
-            background: `linear-gradient(135deg, ${theme.cardTint}, rgba(255,255,255,.75))`,
-          }}
-        >
-          <div
-            className="flex items-center justify-center rounded-[25px] border border-white/75 p-5"
-            style={{ background: `${theme.light}aa` }}
-          >
-            <EllieRobot size={190} waving themeName={ellieTheme} outfit={outfit} />
-          </div>
-
-          <div className="self-center">
-            <span
-              className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-black"
-              style={{ background: `${theme.dark}12`, color: theme.dark }}
-            >
-              <Bot size={14} /> Pulse AI assistant
-            </span>
-            <h2 className="mt-4 text-4xl font-black" style={{ color: theme.deep }}>
-              Meet Ellie AI
-            </h2>
-            <p className="mt-4 max-w-3xl text-sm leading-7 text-[#67796f]">
-              Ellie turns customer-experience data into clear answers. Ask about queue performance,
-              repeat-contact patterns, call types, forecasts, operational risks, and recommended
-              actions.
-            </p>
-
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
-              {[
-                ["Explain metrics", "Break down KPIs and performance changes."],
-                ["Forecast demand", "Understand projected queue volume."],
-                ["Recommend actions", "Identify practical opportunities for improvement."],
-              ].map(([title, text]) => (
-                <div key={title} className="rounded-3xl border border-white/80 bg-white/55 p-5">
-                  <h4 className="font-black" style={{ color: theme.deep }}>
-                    {title}
-                  </h4>
-                  <p className="mt-2 text-xs leading-5 text-[#718078]">{text}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-7 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => setEllieOpen(true)}
-                className="inline-flex items-center gap-2 rounded-2xl px-6 py-3 font-black text-white shadow-lg"
-                style={{ background: theme.dark }}
-              >
-                <Sparkles size={16} /> Open Ellie AI
-              </button>
-              <button
-  type="button"
-  onClick={generateExecutiveBrief}
-  disabled={briefLoading}
-  className="rounded-2xl border border-white bg-white/70 px-6 py-3 text-sm font-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-  style={{
-    color: theme.dark,
-  }}
->
-                <Sparkles size={16} />
-                Open Ellie AI
-                <ArrowUpRight size={15} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </GlassCard>
-    </motion.section>
-  );
-}
 
 function UploadDataButton({ onDataLoaded }) {
    const [uploading, setUploading] = useState(false);
@@ -4695,8 +4704,7 @@ export default function PulseIntelligence() {
     { name: "Overview", icon: Home },
     { name: "Queue Analytics", icon: BarChart3 },
     { name: "Forecasting", icon: TrendingUp },
-    { name: "Executive Center", icon: BriefcaseBusiness },
-    { name: "Ellie AI", icon: WandSparkles },
+    { name: "Leadership Hub", icon: BriefcaseBusiness },
   ];
 
   const switchTab = (tab) => {
@@ -5238,7 +5246,7 @@ const askEllie = async (prompt) => {
         return <QueueAnalyticsView theme={theme} askEllie={askEllie} queueDrivers={dynamicQueueDrivers} />;
       case "Forecasting":
         return <ForecastingView theme={theme} askEllie={askEllie} forecastData={forecastData} callData={callData} setHistoricalComparisonContext={setHistoricalComparisonContext}/>;
-        case "Executive Center":
+        case "Leadership Hub":
           return (
             <ExecutiveCenterView
               theme={theme}
@@ -5250,24 +5258,11 @@ const askEllie = async (prompt) => {
               downloadExecutiveBriefPdf={
                 downloadExecutiveBriefPdf
               }
+              historicalComparisonContext={
+                historicalComparisonContext
+              }
             />
           );
-      case "Ellie AI":
-        return (
-          <EllieAIView
-            theme={theme}
-            ellieTheme={ellieTheme}
-            outfit={outfit}
-            setEllieOpen={setEllieOpen}
-            askEllie={askEllie}
-            generateExecutiveBrief={generateExecutiveBrief}
-            briefLoading={briefLoading}
-            executiveBrief={executiveBrief}
-            showExecutiveBrief={showExecutiveBrief}
-            downloadExecutiveBriefPdf={downloadExecutiveBriefPdf}
-            briefError={briefError}
-          />
-        );
       default:
         return (
           <OverviewView
@@ -5318,27 +5313,7 @@ const askEllie = async (prompt) => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex rounded-2xl border border-white/80 bg-white/60 p-1 shadow-sm backdrop-blur-xl">
-              {["Employee", "Executive Center"].map((mode) => (
-                <button
-                  type="button"
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
-                  className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black transition ${
-                    viewMode === mode ? "text-white shadow" : "text-[#61756a]"
-                  }`}
-                  style={viewMode === mode ? { background: theme.dark } : {}}
-                >
-                  {mode === "Employee" ? (
-                    <UserRound size={14} />
-                  ) : (
-                    <BriefcaseBusiness size={14} />
-                  )}
-                  {mode}
-                </button>
-              ))}
-            </div>
+          
             
             <UploadDataButton
   onDataLoaded={(rows) => {
@@ -5347,17 +5322,9 @@ const askEllie = async (prompt) => {
     setDataError("");
   }}
 />
-              <button
-                type="button"
-                onClick={() => setEllieOpen(true)}
-                className="flex items-center gap-2 rounded-2xl border border-white/80 bg-white/60 px-4 py-3 text-sm font-black shadow-sm backdrop-blur-xl"
-                style={{ color: theme.deep }}
-            >
-              <Bot size={17} /> Meet Ellie <ArrowUpRight size={15} />
-            </button>
-          </div>
+    
+        
         </header>
-
         <div className="sticky top-3 z-40 mb-6">
           <GlassCard className="p-2 shadow-xl" theme={theme}>
             <nav className="grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -5390,19 +5357,9 @@ const askEllie = async (prompt) => {
           </GlassCard>
         </div>
 
-        <AnimatePresence mode="wait">{renderActiveView()}</AnimatePresence>
-        
-        <div className="mt-6 rounded-2xl bg-white p-4">
-          <p>Loading: {dataLoading ? "Yes" : "No"}</p>
-          <p>Rows Loaded: {callData.length}</p>
-          <p>Status: {dataError || "Data ready"}</p>
-
-          <pre>
-            {callData.length > 0
-               ? JSON.stringify(callData[0], null, 2)
-               : "No data loaded"}
-          </pre>
-        </div>
+        <AnimatePresence mode="wait">
+  {renderActiveView()}
+</AnimatePresence>
 
         <footer className="py-7 text-center text-xs text-[#74857b]">
           Pulse Accelerator Prototype · Synthetic demonstration data · Last 30 days
@@ -5421,5 +5378,6 @@ const askEllie = async (prompt) => {
         generateEllieAnswer={generateEllieAnswer}
       />
     </div>
-  )}; 
+  );
+}
 
