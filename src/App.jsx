@@ -3945,15 +3945,10 @@ function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, genera
     color: theme.dark,
   }}
 >
-  {briefLoading
-    ? "Generating brief..."
-    : "Generate Full Summary"}
-</button>
-  {briefError && (
-  <div className="mt-4 rounded-2xl bg-rose-50 p-4 text-sm font-bold text-rose-700">
-    {briefError}
-  </div>
-)}
+                <Sparkles size={16} />
+                Open Ellie AI
+                <ArrowUpRight size={15} />
+              </button>
             </div>
           </div>
         </div>
@@ -3961,17 +3956,6 @@ function EllieAIView({ theme, ellieTheme, outfit, setEllieOpen, askEllie, genera
     </motion.section>
   );
 }
-
-const requiredColumns = [
-  "Date",
-  "Queue",
-  "Calls",
-  "RepeatCalls",
-  "ResolvedCalls",
-  "Transfers",
-  "Escalations",
-  "AverageHandleTime",
-];
 
 function UploadDataButton({ onDataLoaded }) {
    const [uploading, setUploading] = useState(false);
