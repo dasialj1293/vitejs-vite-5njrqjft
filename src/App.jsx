@@ -4252,9 +4252,6 @@ const leadershipCallChange =
 
     
   </div>
-  <p className="mt-3 text-sm text-[#66766d]">
-  Selected Period: {reportPeriod}
-</p>
 </div>
         
         <div className="mt-6 flex gap-3">
