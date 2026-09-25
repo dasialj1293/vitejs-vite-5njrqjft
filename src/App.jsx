@@ -4857,55 +4857,101 @@ const analyticsContext = useMemo(
   ]
 );
 
-const generateEllieAnswer =
-  async (prompt) => {
+const generateEllieAnswer = async (prompt) => {
+  const ellieEndpoint =
+  "/.netlify/functions/ellie-ai";
 
-    const response = await fetch(
-      "/.netlify/functions/ellie-ai",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          question: prompt,
-          context: analyticsContext,
-        }),
-      }
-    );
-    
-    const responseText =
+
+  const response = await fetch(
+    ellieEndpoint,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type":
+          "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        question: prompt,
+        context: analyticsContext,
+      }),
+    }
+  );
+
+  const responseText =
     await response.text();
-  
+
+  console.log(
+    "Ellie endpoint:",
+    ellieEndpoint
+  );
+
+  console.log(
+    "Ellie response status:",
+    response.status
+  );
+
+  console.log(
+    "Ellie response content type:",
+    response.headers.get(
+      "content-type"
+    )
+  );
+
+  console.log(
+    "Ellie raw response:",
+    responseText.slice(0, 500)
+  );
+
   let result = null;
-  
+
   try {
     result = responseText
       ? JSON.parse(responseText)
       : null;
   } catch {
+    const responsePreview =
+      responseText
+        .replace(/\s+/g, " ")
+        .slice(0, 150);
+
     throw new Error(
-      response.status === 504
-        ? "Ellie took too long to generate the report. Please try again."
-        : `Ellie returned an invalid response. Status ${response.status}.`
+      responseText
+        .trim()
+        .toLowerCase()
+        .startsWith("<!doctype") ||
+      responseText
+        .trim()
+        .toLowerCase()
+        .startsWith("<html")
+        ? "Ellie received an HTML page instead of the AI response."
+        : `Ellie returned invalid JSON. Status ${response.status}. Response: ${responsePreview}`
     );
   }
-  
+
   if (!response.ok) {
     throw new Error(
       result?.message ||
+        result?.error ||
         `Ellie could not generate a response. Status ${response.status}.`
     );
   }
-  
-  if (!result?.answer) {
+
+  const answer =
+    result?.answer ||
+    result?.output ||
+    result?.message;
+
+  if (
+    typeof answer !== "string" ||
+    !answer.trim()
+  ) {
     throw new Error(
-      "Ellie did not return any report text."
+      "Ellie returned JSON, but the response did not include an answer."
     );
   }
-  
-  return result.answer;
+
+  return answer.trim();
 };
 
   const generateExecutiveBrief =

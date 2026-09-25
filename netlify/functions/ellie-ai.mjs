@@ -6,7 +6,23 @@ export default async function handler(
         "application/json; charset=utf-8",
       "X-Content-Type-Options":
         "nosniff",
+    
+      "Access-Control-Allow-Origin":
+        "*",
+    
+      "Access-Control-Allow-Headers":
+        "Content-Type",
+    
+      "Access-Control-Allow-Methods":
+        "POST, OPTIONS",
     };
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers,
+      });
+    }
   
     if (request.method !== "POST") {
       return new Response(
