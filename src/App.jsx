@@ -3821,6 +3821,7 @@ placeholder="Choose a comparison"
 }) {
 
   const [briefExpanded, setBriefExpanded] = useState(false);
+  const [reportPeriod, setReportPeriod] = useState("Current Month");
   return (
     <motion.section
       initial={{ opacity: 0 }}
@@ -3852,10 +3853,51 @@ placeholder="Choose a comparison"
           Leadership reporting and monthly insights.
         </p>
 
+        <div className="mt-6">
+  <p className="mb-3 text-xs font-black uppercase tracking-widest text-[#7b8d81]">
+    Reporting Period
+  </p>
+
+  <div className="flex flex-wrap gap-2">
+
+    {[
+      "Current Month",
+      "Previous Month",
+      "QTD",
+      "YTD",
+    ].map((period) => (
+      <button
+        key={period}
+        onClick={() =>
+          setReportPeriod(period)
+        }
+        className="rounded-2xl px-4 py-3 text-sm font-black transition-all"
+        style={{
+          background:
+            reportPeriod === period
+              ? theme.dark
+              : "white",
+          color:
+            reportPeriod === period
+              ? "white"
+              : theme.deep,
+        }}
+      >
+        {period}
+      </button>
+    ))}
+
+  </div>
+  <p className="mt-3 text-sm text-[#66766d]">
+  Selected Period: {reportPeriod}
+</p>
+</div>
         
         <div className="mt-6 flex gap-3">
           <button
-            onClick={generateExecutiveBrief}
+            onClick={() =>
+              generateExecutiveBrief(reportPeriod)
+            }
             className="rounded-2xl px-6 py-3 text-white font-black"
             style={{
               background: theme.dark,
@@ -4957,7 +4999,7 @@ const generateEllieAnswer = async (prompt) => {
 };
 
   const generateExecutiveBrief =
-  async () => {
+  async (reportPeriod) => {
     if (
       !historicalComparisonContext
     ) {
@@ -4975,6 +5017,9 @@ const generateEllieAnswer = async (prompt) => {
       const answer =
         await generateEllieAnswer(`
 Generate a concise executive summary.
+
+Reporting Period:
+${reportPeriod}
 
 Requirements:
 -Maximum one page.
