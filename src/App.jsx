@@ -3817,11 +3817,286 @@ placeholder="Choose a comparison"
   briefLoading,
   downloadExecutiveBriefPdf,
   historicalComparisonContext,
-  savedReports,
+  savedReports = [],
+  callData = [],
 }) {
 
   const [briefExpanded, setBriefExpanded] = useState(false);
-  const [reportPeriod, setReportPeriod] = useState("Current Month");
+
+  const [leadershipQueue, setLeadershipQueue] =
+  useState("All Queues");
+
+const [leadershipMonth, setLeadershipMonth] =
+  useState("");
+
+const [
+  leadershipComparisonMode,
+  setLeadershipComparisonMode,
+] = useState("No Comparison");
+
+const [
+  leadershipComparisonMonth,
+  setLeadershipComparisonMonth,
+] = useState("");
+
+const [
+  leadershipQueueOpen,
+  setLeadershipQueueOpen,
+] = useState(false);
+
+const [
+  leadershipMonthOpen,
+  setLeadershipMonthOpen,
+] = useState(false);
+
+const [
+  leadershipComparisonModeOpen,
+  setLeadershipComparisonModeOpen,
+] = useState(false);
+
+const [
+  leadershipComparisonMonthOpen,
+  setLeadershipComparisonMonthOpen,
+] = useState(false);
+
+const leadershipQueueOptions = useMemo(() => {
+  return [
+    "All Queues",
+    ...Array.from(
+      new Set(
+        callData
+          .map((row) =>
+            String(row.Queue || "").trim()
+          )
+          .filter(Boolean)
+      )
+    ).sort(),
+  ];
+}, [callData]);
+
+const leadershipFilteredData = useMemo(() => {
+  if (leadershipQueue === "All Queues") {
+    return callData;
+  }
+
+  return callData.filter(
+    (row) =>
+      String(row.Queue || "").trim() ===
+      leadershipQueue
+  );
+}, [callData, leadershipQueue]);
+
+const leadershipAvailableMonths =
+  useMemo(() => {
+    return Array.from(
+      new Set(
+        leadershipFilteredData
+          .map((row) => {
+            const date =
+              parseDashboardDate(row.Date);
+
+            return date
+              ? createMonthKey(date)
+              : "";
+          })
+          .filter(Boolean)
+      )
+    ).sort();
+  }, [leadershipFilteredData]);
+
+  useEffect(() => {
+    if (
+      leadershipAvailableMonths.length === 0
+    ) {
+      setLeadershipMonth("");
+      return;
+    }
+  
+    if (
+      !leadershipAvailableMonths.includes(
+        leadershipMonth
+      )
+    ) {
+      setLeadershipMonth(
+        leadershipAvailableMonths[
+          leadershipAvailableMonths.length - 1
+        ]
+      );
+    }
+  }, [
+    leadershipAvailableMonths,
+    leadershipMonth,
+  ]);
+
+  const resolvedLeadershipComparisonMonth =
+  useMemo(() => {
+    if (
+      !leadershipMonth ||
+      leadershipComparisonMode ===
+        "No Comparison"
+    ) {
+      return "";
+    }
+
+    if (
+      leadershipComparisonMode ===
+      "Previous Month"
+    ) {
+      return getPreviousMonthKey(
+        leadershipMonth
+      );
+    }
+
+    if (
+      leadershipComparisonMode ===
+      "Same Month Last Year"
+    ) {
+      return getPriorYearMonthKey(
+        leadershipMonth
+      );
+    }
+
+    return leadershipComparisonMonth;
+  }, [
+    leadershipMonth,
+    leadershipComparisonMode,
+    leadershipComparisonMonth,
+  ]);
+
+  const leadershipPrimaryRows =
+  useMemo(() => {
+    return leadershipFilteredData.filter(
+      (row) => {
+        const date =
+          parseDashboardDate(row.Date);
+
+        return (
+          date &&
+          createMonthKey(date) ===
+            leadershipMonth
+        );
+      }
+    );
+  }, [
+    leadershipFilteredData,
+    leadershipMonth,
+  ]);
+
+const leadershipComparisonRows =
+  useMemo(() => {
+    if (
+      !resolvedLeadershipComparisonMonth
+    ) {
+      return [];
+    }
+
+    return leadershipFilteredData.filter(
+      (row) => {
+        const date =
+          parseDashboardDate(row.Date);
+
+        return (
+          date &&
+          createMonthKey(date) ===
+            resolvedLeadershipComparisonMonth
+        );
+      }
+    );
+  }, [
+    leadershipFilteredData,
+    resolvedLeadershipComparisonMonth,
+  ]);
+
+const leadershipPrimaryMetrics =
+  useMemo(
+    () =>
+      calculatePeriodMetrics(
+        leadershipPrimaryRows
+      ),
+    [leadershipPrimaryRows]
+  );
+
+const leadershipComparisonMetrics =
+  useMemo(
+    () =>
+      calculatePeriodMetrics(
+        leadershipComparisonRows
+      ),
+    [leadershipComparisonRows]
+  );
+
+const leadershipComparisonExists =
+  leadershipComparisonRows.length > 0;
+
+const leadershipCallChange =
+  leadershipComparisonExists
+    ? calculatePercentChange(
+        leadershipPrimaryMetrics.calls,
+        leadershipComparisonMetrics.calls
+      )
+    : null;
+
+    const leadershipReportContext = {
+      queue: leadershipQueue,
+    
+      selectedMonth:
+        leadershipMonth,
+    
+      selectedMonthLabel:
+        formatMonthLabel(
+          leadershipMonth
+        ),
+    
+      comparisonMode:
+        leadershipComparisonMode,
+    
+      comparisonMonth:
+        resolvedLeadershipComparisonMonth,
+    
+      comparisonMonthLabel:
+        resolvedLeadershipComparisonMonth
+          ? formatMonthLabel(
+              resolvedLeadershipComparisonMonth
+            )
+          : "No Comparison",
+    
+      comparisonExists:
+        leadershipComparisonExists,
+    
+      selectedMetrics:
+        leadershipPrimaryMetrics,
+    
+      comparisonMetrics:
+        leadershipComparisonMetrics,
+    
+      changes: {
+        callPercent:
+          leadershipCallChange,
+    
+        fcrPoints:
+          leadershipComparisonExists
+            ? leadershipPrimaryMetrics.fcr -
+              leadershipComparisonMetrics.fcr
+            : null,
+    
+        repeatPoints:
+          leadershipComparisonExists
+            ? leadershipPrimaryMetrics
+                .repeatRate -
+              leadershipComparisonMetrics
+                .repeatRate
+            : null,
+    
+        transferPoints:
+          leadershipComparisonExists
+            ? leadershipPrimaryMetrics
+                .transferRate -
+              leadershipComparisonMetrics
+                .transferRate
+            : null,
+      },
+    };
+  
   return (
     <motion.section
       initial={{ opacity: 0 }}
@@ -3853,6 +4128,121 @@ placeholder="Choose a comparison"
           Leadership reporting and monthly insights.
         </p>
 
+        <div className="relative z-30 mt-6 grid gap-4 rounded-[24px] border border-white/80 bg-white/45 p-5 md:grid-cols-2 xl:grid-cols-4">
+  <div>
+    <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+      Queue
+    </label>
+
+    <PulseDropdown
+      value={leadershipQueue}
+      options={leadershipQueueOptions}
+      onChange={setLeadershipQueue}
+      open={leadershipQueueOpen}
+      setOpen={setLeadershipQueueOpen}
+      theme={theme}
+      placeholder="Select a queue"
+    />
+  </div>
+
+  <div>
+    <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+      Primary month
+    </label>
+
+    <PulseDropdown
+      value={leadershipMonth}
+      options={
+        leadershipAvailableMonths
+      }
+      onChange={setLeadershipMonth}
+      formatOption={formatMonthLabel}
+      open={leadershipMonthOpen}
+      setOpen={setLeadershipMonthOpen}
+      theme={theme}
+      placeholder="Select a month"
+    />
+  </div>
+
+  <div>
+    <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+      Compare to
+    </label>
+
+    <PulseDropdown
+      value={
+        leadershipComparisonMode
+      }
+      options={[
+        "No Comparison",
+        "Previous Month",
+        "Same Month Last Year",
+        "Custom Month",
+      ]}
+      onChange={
+        setLeadershipComparisonMode
+      }
+      open={
+        leadershipComparisonModeOpen
+      }
+      setOpen={
+        setLeadershipComparisonModeOpen
+      }
+      theme={theme}
+      placeholder="Choose comparison"
+    />
+  </div>
+
+  <div>
+    <label className="mb-2 block text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+      Comparison month
+    </label>
+
+    {leadershipComparisonMode ===
+    "Custom Month" ? (
+      <PulseDropdown
+        value={
+          leadershipComparisonMonth
+        }
+        options={
+          leadershipAvailableMonths.filter(
+            (month) =>
+              month !== leadershipMonth
+          )
+        }
+        onChange={
+          setLeadershipComparisonMonth
+        }
+        formatOption={formatMonthLabel}
+        open={
+          leadershipComparisonMonthOpen
+        }
+        setOpen={
+          setLeadershipComparisonMonthOpen
+        }
+        theme={theme}
+        placeholder="Select comparison"
+      />
+    ) : (
+      <div
+        className="flex min-h-[46px] items-center rounded-2xl border border-white/80 bg-[#f7faf7] px-4 py-3 text-sm font-black shadow-sm"
+        style={{
+          color: theme.deep,
+        }}
+      >
+        {leadershipComparisonMode ===
+        "No Comparison"
+          ? "No comparison selected"
+          : resolvedLeadershipComparisonMonth
+            ? formatMonthLabel(
+                resolvedLeadershipComparisonMonth
+              )
+            : "Comparison unavailable"}
+      </div>
+    )}
+  </div>
+</div>
+
         <div className="mt-6">
   <p className="mb-3 text-xs font-black uppercase tracking-widest text-[#7b8d81]">
     Reporting Period
@@ -3860,33 +4250,7 @@ placeholder="Choose a comparison"
 
   <div className="flex flex-wrap gap-2">
 
-    {[
-      "Current Month",
-      "Previous Month",
-      "QTD",
-      "YTD",
-    ].map((period) => (
-      <button
-        key={period}
-        onClick={() =>
-          setReportPeriod(period)
-        }
-        className="rounded-2xl px-4 py-3 text-sm font-black transition-all"
-        style={{
-          background:
-            reportPeriod === period
-              ? theme.dark
-              : "white",
-          color:
-            reportPeriod === period
-              ? "white"
-              : theme.deep,
-        }}
-      >
-        {period}
-      </button>
-    ))}
-
+    
   </div>
   <p className="mt-3 text-sm text-[#66766d]">
   Selected Period: {reportPeriod}
@@ -3896,9 +4260,13 @@ placeholder="Choose a comparison"
         <div className="mt-6 flex gap-3">
           <button
             onClick={() =>
-              generateExecutiveBrief(reportPeriod)
+              generateExecutiveBrief(leadershipReportContext)
             }
-            className="rounded-2xl px-6 py-3 text-white font-black"
+            disabled={
+              briefLoading ||
+              !leadershipMonth
+            }
+            className="rounded-2xl px-6 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               background: theme.dark,
             }}
@@ -3999,7 +4367,7 @@ placeholder="Choose a comparison"
   </button>
 )}
 
-        {executiveBrief && (
+        {executiveBrief && briefExpanded && (
   <GlassCard
     theme={theme}
     className="mt-6 p-6"
@@ -4999,12 +5367,12 @@ const generateEllieAnswer = async (prompt) => {
 };
 
   const generateExecutiveBrief =
-  async (reportPeriod) => {
+  async (reportContext) => {
     if (
-      !historicalComparisonContext
+      !reportContext?.selectedMonth
     ) {
       setBriefError(
-        "Select a month comparison in Historical Analytics first."
+        "Select a reporting month first."
       );
 
       return;
@@ -5015,27 +5383,46 @@ const generateEllieAnswer = async (prompt) => {
 
     try {
       const answer =
-        await generateEllieAnswer(`
-Generate a concise executive summary.
+  await generateEllieAnswer(`
 
-Reporting Period:
-${reportPeriod}
+Leadership report configuration:
 
-Requirements:
--Maximum one page.
--Approximately 400-700 words.
--Use professional leadership language.
--Include:
+Queue:
+${reportContext.queue}
 
-1.Executive Overview
-2.Key Findings
-3.Risk & Opportunities
-4. Recommend Actions
+Primary reporting month:
+${reportContext.selectedMonthLabel}
 
-Avoid long bullet lists.
-Avoid repeating metrics.
-Do not create more than four sections.
-Do not generate appendices, notes, limitations, or methodology sections.
+Comparison:
+${
+  reportContext.comparisonExists
+    ? reportContext.comparisonMonthLabel
+    : "No comparison"
+}
+
+Selected metrics:
+${JSON.stringify(
+  reportContext.selectedMetrics
+)}
+
+Comparison metrics:
+${JSON.stringify(
+  reportContext.comparisonMetrics
+)}
+
+Metric changes:
+${JSON.stringify(
+  reportContext.changes
+)}
+
+Create a concise executive leadership report.
+
+Include:
+- Executive Overview
+- Performance Analysis
+- Key Findings
+- Operational Risks
+- Recommended Actions
 `);
 
       setExecutiveBrief(answer);
@@ -5427,6 +5814,7 @@ const askEllie = async (prompt) => {
                 historicalComparisonContext
               }
               savedReports={savedReports}
+              callData={callData}
             />
           );
       default:
