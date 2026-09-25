@@ -3819,6 +3819,8 @@ placeholder="Choose a comparison"
   historicalComparisonContext,
   savedReports,
 }) {
+
+  const [briefExpanded, setBriefExpanded] = useState(false);
   return (
     <motion.section
       initial={{ opacity: 0 }}
@@ -4308,7 +4310,6 @@ export default function PulseIntelligence() {
   const [briefLoading, setBriefLoading] = useState(false);
   const [briefError, setBriefError] = useState("");
   const [savedReports, setSavedReports] = useState([]);
-  const [briefExpanded, setBriefExpanded] = useState(false);
 
 
   useEffect(() => {
