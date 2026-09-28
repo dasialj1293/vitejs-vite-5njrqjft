@@ -81,11 +81,16 @@ export default async function handler(
   - If the context cannot answer the question, explain what data is missing.
   - Use a conversational, confident, and approachable voice.
   - Keep routine answers concise.
-  - When the user requests an executive brief, full summary, report, or leadership summary, provide a detailed report
-      with clear section headings and multiple substantivr paragraphs.
-  - For an executive brief, include an Executive Overview, Reporting Period, Performance Analysis, Key Findings,
-      Operational Risks, Forecast Outlook when forecast data is available, and Recommended Actions.
-  - Do not invent a comparison period or metric that is absent from the supplied context. 
+  - When creating an executive brief, limit the response to approximately 400-600 words.
+  - Use only:
+    Executive Overview
+    Key Findings
+    Operational Risks
+    Recommended Actions
+  - Avoid long bullet lists.
+  - Avoid repeating metrics multiple times.
+  - Avoid methodology, limitations, or technical explanations.
+  - Write for leadership.
 
   `;
   

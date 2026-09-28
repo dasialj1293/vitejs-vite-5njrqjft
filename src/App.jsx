@@ -4310,7 +4310,17 @@ const leadershipCallChange =
         key={report.id}
         className="block w-full rounded-xl bg-white p-3 text-left"
       >
-        {report.month}
+       <div>
+  <p className="font-black">
+    {report.month}
+  </p>
+
+  <p className="text-xs text-[#66766d]">
+    {report.queue}
+    {" • "}
+    {report.comparison}
+  </p>
+</div> 
       </button>
     ))}
   </div>
@@ -4347,7 +4357,7 @@ const leadershipCallChange =
             </h3>
 
             <p className="mt-2 text-xs text-[#6e7d74]">
-              {historicalComparisonContext?.selectedMonthLabel ||
+              {leadershipReportContext?.selectedMonthLabel ||
                 "No report generated"}
             </p>
 
@@ -4365,7 +4375,7 @@ const leadershipCallChange =
             </h3>
 
             <p className="mt-3 text-sm">
-              {historicalComparisonContext?.changes?.callPercent < -20
+              {leadershipReportContext?.changes?.callPercent < -20
                 ? "Significant volume decline requires investigation."
                 : "No major month-over-month risk detected."}
             </p>
@@ -4380,7 +4390,7 @@ const leadershipCallChange =
             </h3>
 
             <p className="mt-3 text-sm">
-              {historicalComparisonContext?.selectedMetrics?.topCallType ||
+              {leadershipReportContext?.selectedMetrics?.topCallType ||
                 "No driver available"}
             </p>
           </GlassCard>
@@ -4428,15 +4438,19 @@ const leadershipCallChange =
   }
 </p>
 
+<h3 className="font-black">
+  Executive Snapshot
+</h3>
+
 <p className="mt-2 text-sm">
   Volume:
-  {historicalComparisonContext?.changes?.callPercent?.toFixed(1)}%
+  {leadershipReportContext?.changes?.callPercent?.toFixed(1)}%
 </p>
 
 <p className="mt-2 text-sm">
   Top Driver:
   {
-    historicalComparisonContext
+    leadershipReportContext
       ?.selectedMetrics
       ?.topCallType
   }
@@ -4445,8 +4459,8 @@ const leadershipCallChange =
 <p className="mt-2 text-sm">
   FCR:
   {
-    historicalComparisonContext?.selectedMetrics?.fcr != null
-      ? historicalComparisonContext.selectedMetrics.fcr.toFixed(1)
+    leadershipReportContext?.selectedMetrics?.fcr != null
+      ? leadershipReportContext.selectedMetrics.fcr.toFixed(1)
       : "N/A"
   }
   %
@@ -5478,6 +5492,23 @@ Include:
 `);
 
       setExecutiveBrief(answer);
+      setSavedReports((current) => [
+        {
+          id: Date.now(),
+          month:
+            reportContext?.selectedMonthLabel,
+          queue:
+            reportContext?.queue,
+          comparison:
+            reportContext?.comparisonExists
+              ? reportContext?.comparisonMonthLabel
+              : "No Comparison",
+            report: answer,
+            context: reportContext,
+        },
+        ...current,
+      ]);
+
       setSavedReports((current) => [
         {
           id: Date.now(),
