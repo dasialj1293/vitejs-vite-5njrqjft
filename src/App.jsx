@@ -5568,8 +5568,10 @@ const downloadExecutiveBriefPdf = () => {
     leftMargin -
     rightMargin;
 
-  const comparison =
-    historicalComparisonContext;
+    const comparison =
+    savedReports.length > 0
+      ? savedReports[0].context
+      : null;
 
   const primaryLabel =
     comparison?.selectedMonthLabel ||
