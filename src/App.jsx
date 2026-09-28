@@ -373,71 +373,7 @@ function InsightCard({ insight, theme, onAsk }) {
       </GlassCard>
     </motion.div>
   );
-}
-
-function ExecutiveSummary({ theme, onAsk }) {
-  return (
-    <GlassCard className="mt-5 overflow-hidden p-1" theme={theme}>
-      <div
-        className="grid gap-5 rounded-[25px] p-6 text-white lg:grid-cols-4"
-        style={{
-          background: `linear-gradient(115deg, ${theme.deep}, ${theme.dark}, ${theme.mid})`,
-        }}
-      >
-        <div>
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-white/65">
-            <BriefcaseBusiness size={15} /> Executive brief
-          </div>
-          <h3 className="mt-3 text-2xl font-black">Credit queue opportunity</h3>
-          <p className="mt-2 text-sm leading-6 text-white/70">
-            A concise view of the signal, impact, action, and confidence.
-          </p>
-        </div>
-
-        {[
-          ["Key insight", "Repeat contacts are increasing faster than total contact volume."],
-          ["Estimated impact", "$6.8K annual prototype opportunity from preventable demand."],
-          ["Recommended action", "Review payment-arrangement journeys and Friday staffing."],
-        ].map(([label, value]) => (
-          <div
-            key={label}
-            className="rounded-[22px] border border-white/20 bg-white/10 p-4 backdrop-blur-xl"
-          >
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/55">
-              {label}
-            </p>
-            <p className="mt-3 text-sm font-bold leading-6">{value}</p>
-          </div>
-        ))}
-
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-white/15 bg-black/10 px-4 py-3 lg:col-span-3 lg:col-start-2">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/55">
-              Prototype confidence
-            </p>
-            <div className="mt-2 flex items-center gap-3">
-              <div className="h-2 w-36 overflow-hidden rounded-full bg-white/20">
-                <div
-                  className="h-full w-[74%] rounded-full"
-                  style={{ background: theme.accent }}
-                />
-              </div>
-              <span className="text-sm font-black">74%</span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => onAsk("Give me the executive summary and recommended action")}
-            className="rounded-2xl bg-white px-4 py-2.5 text-xs font-black"
-            style={{ color: theme.dark }}
-          >
-            Ask Ellie for details
-          </button>
-        </div>
-      </div>
-    </GlassCard>
-  );
-}
+} 
 
 function FloatingEllie({
   open,
@@ -864,7 +800,6 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
           </div>
         </GlassCard>
 
-        {viewMode === "Executive" && <ExecutiveSummary theme={theme} onAsk={askEllie} />}
       </div>
 
       <div>
@@ -4373,6 +4308,24 @@ const leadershipCallChange =
   <h3 className="font-black">
   Executive Snapshot
 </h3>
+
+<p className="mt-2 text-sm">
+  Queue: {leadershipReportContext?.queue}
+</p>
+
+<p className="mt-2 text-sm">
+  Reporting Month:
+  {leadershipReportContext?.selectedMonthLabel}
+</p>
+
+<p className="mt-2 text-sm">
+  Comparison:
+  {
+    leadershipReportContext?.comparisonExists
+      ? leadershipReportContext?.comparisonMonthLabel
+      : "No Comparison"
+  }
+</p>
 
 <p className="mt-2 text-sm">
   Volume:
