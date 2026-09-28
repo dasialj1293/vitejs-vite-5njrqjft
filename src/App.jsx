@@ -3758,6 +3758,10 @@ placeholder="Choose a comparison"
 
   const [briefExpanded, setBriefExpanded] = useState(false);
 
+  const [showSaveModal, setShowSaveModal] = useState(false);
+
+  const [showSavedCelebration, setShowSavedCelebration] = useState(false);
+
   const [leadershipQueue, setLeadershipQueue] =
   useState("All Queues");
 
@@ -4188,6 +4192,93 @@ const leadershipCallChange =
     
   </div>
 </div>
+
+<AnimatePresence>
+  {showSaveModal && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40"
+    >
+      <div className="rounded-3xl bg-white p-8 shadow-2xl">
+
+        <h3 className="text-xl font-black">
+          Save Report?
+        </h3>
+
+        <p className="mt-3 text-sm">
+          Save this executive summary to Report History?
+        </p>
+
+        <div className="mt-6 flex gap-3">
+
+          <button
+            onClick={() =>
+              setShowSaveModal(false)
+            }
+            className="rounded-2xl border px-5 py-3 font-black"
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={() => {
+              setShowSaveModal(false);
+
+              setShowSavedCelebration(true);
+
+              setTimeout(() => {
+                setShowSavedCelebration(false);
+              }, 3000);
+            }}
+            className="rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white"
+          >
+            Save
+          </button>
+
+        </div>
+
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
+<AnimatePresence>
+  {showSavedCelebration && (
+    <motion.div
+      initial={{
+        opacity: 0,
+        y: -40,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      exit={{
+        opacity: 0,
+        y: -40,
+      }}
+      className="fixed top-8 left-1/2 z-[9999] flex -translate-x-1/2 items-center gap-4 rounded-3xl bg-white px-8 py-5 shadow-2xl"
+    >
+      <EllieRobot
+        size={70}
+        mood="excited"
+      />
+
+      <div>
+        <h3 className="font-black text-emerald-700">
+          Report Saved!
+        </h3>
+
+        <p className="text-sm">
+          I've saved this executive summary for future leadership reviews.
+        </p>
+      </div>
+
+    </motion.div>
+  )}
+</AnimatePresence>
         
         <div className="mt-6 flex gap-3">
           <button
@@ -4225,14 +4316,33 @@ const leadershipCallChange =
   </div>
 </details>
 
-          {executiveBrief && (
-            <button
-              onClick={downloadExecutiveBriefPdf}
-              className="rounded-2xl bg-white px-6 py-3 font-black"
-            >
-              Download PDF
-            </button>
-          )}
+{executiveBrief && (
+  <>
+    <button
+      onClick={downloadExecutiveBriefPdf}
+      className="rounded-2xl bg-white px-6 py-3 font-black"
+    >
+      Download PDF
+    </button>
+
+    <button
+      onClick={() =>
+        setShowSaveModal(true)
+      }
+      className="rounded-2xl bg-emerald-600 px-6 py-3 font-black text-white"
+    >
+      Save Report
+    </button>
+  </>
+)}
+<button
+  onClick={() =>
+    setShowSaveModal(true)
+  }
+  className="rounded-2xl bg-emerald-600 px-6 py-3 font-black text-white"
+>
+  Save Report
+</button>
         </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -4371,6 +4481,7 @@ const leadershipCallChange =
         }}
       >
         Download PDF
+        Save Report 
       </button>
 
     </div>
