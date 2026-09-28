@@ -4401,7 +4401,7 @@ const leadershipCallChange =
 
       <div>
         <h2 className="text-2xl font-black">
-          {historicalComparisonContext?.selectedMonthLabel ||
+          {leadershipReportContext?.selectedMonthLabel ||
             "Executive Summary"}
         </h2>
 
