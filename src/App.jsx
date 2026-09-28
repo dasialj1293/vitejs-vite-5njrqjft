@@ -4324,15 +4324,6 @@ const leadershipCallChange =
     >
       Download PDF
     </button>
-
-    <button
-      onClick={() =>
-        setShowSaveModal(true)
-      }
-      className="rounded-2xl bg-emerald-600 px-6 py-3 font-black text-white"
-    >
-      Save Report
-    </button>
   </>
 )}
 <button
