@@ -3748,15 +3748,21 @@ placeholder="Choose a comparison"
  function ExecutiveCenterView({
   theme,
   executiveBrief,
+  generatedReportContext,
   generateExecutiveBrief,
   briefLoading,
   downloadExecutiveBriefPdf,
   historicalComparisonContext,
   savedReports = [],
+  saveExecutiveReport,
   callData = [],
 }) {
 
   const [briefExpanded, setBriefExpanded] = useState(false);
+
+  const [reportHistoryOpen, setReportHistoryOpen] = useState(false);
+
+  const [selectedSavedReport, setSelectedSavedReport] = useState(null);
 
   const [showSaveModal, setShowSaveModal] = useState(false);
 
@@ -4299,32 +4305,120 @@ const leadershipCallChange =
               : "Generate Monthly Summary"}
           </button>
 
-          <details className="mt-6">
-  <summary className="cursor-pointer font-black">
-    Report History
-  </summary>
+          <div className="relative min-w-[260px]">
+  <button
+    type="button"
+    onClick={() =>
+      setReportHistoryOpen(
+        (current) => !current
+      )
+    }
+    className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/80 bg-white/75 px-4 py-3 text-left text-sm font-black shadow-sm transition hover:bg-white"
+    style={{
+      color: theme.deep,
+    }}
+  >
+    <span className="truncate">
+      {selectedSavedReport
+        ? `${selectedSavedReport.month} • ${selectedSavedReport.queue}`
+        : "Report History"}
+    </span>
 
-  <div className="mt-3 space-y-2">
-    {savedReports.map((report) => (
-      <button
-        key={report.id}
-        className="block w-full rounded-xl bg-white p-3 text-left"
+    <ChevronDown
+      size={16}
+      className={`shrink-0 transition-transform duration-200 ${
+        reportHistoryOpen
+          ? "rotate-180"
+          : ""
+      }`}
+    />
+  </button>
+
+  <AnimatePresence>
+    {reportHistoryOpen && (
+      <motion.div
+        initial={{
+          opacity: 0,
+          y: -8,
+          scale: 0.97,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+          scale: 1,
+        }}
+        exit={{
+          opacity: 0,
+          y: -6,
+          scale: 0.97,
+        }}
+        transition={{
+          duration: 0.18,
+        }}
+        className="absolute left-0 top-full z-[9999] mt-2 max-h-72 w-full overflow-y-auto rounded-2xl p-2 shadow-2xl"
+        style={{
+          background: "#f7faf7",
+          border:
+            "1px solid rgba(214,223,216,0.95)",
+          boxShadow:
+            "0 18px 40px rgba(36,74,53,0.15)",
+        }}
       >
-       <div>
-  <p className="font-black">
-    {report.month}
-  </p>
+        {savedReports.length === 0 ? (
+          <div className="px-3 py-4 text-sm font-bold text-[#718078]">
+            No saved reports yet
+          </div>
+        ) : (
+          savedReports.map(
+            (report) => (
+              <button
+                key={report.id}
+                type="button"
+                onClick={() => {
+                  setSelectedSavedReport(
+                    report
+                  );
 
-  <p className="text-xs text-[#66766d]">
-    {report.queue}
-    {" • "}
-    {report.comparison}
-  </p>
-</div> 
-      </button>
-    ))}
-  </div>
-</details>
+                  setReportHistoryOpen(
+                    false
+                  );
+
+                  setBriefExpanded(
+                    true
+                  );
+                }}
+                className="w-full rounded-xl px-3 py-3 text-left transition hover:bg-[#eef4ef]"
+                style={{
+                  background:
+                    selectedSavedReport
+                      ?.id === report.id
+                      ? "#dfe8e0"
+                      : "transparent",
+                }}
+              >
+                <p
+                  className="text-sm font-black"
+                  style={{
+                    color:
+                      theme.deep,
+                  }}
+                >
+                  {report.month}
+                </p>
+
+                <p className="mt-1 text-xs text-[#718078]">
+                  {report.queue}
+                  {" • "}
+                  {report.comparison}
+                </p>
+              </button>
+            )
+          )
+        )}
+      </motion.div>
+    )}
+  </AnimatePresence>
+</div>
 
 {executiveBrief && (
   <>
@@ -4397,7 +4491,7 @@ const leadershipCallChange =
 
         </div>
         
-        {executiveBrief && (
+        {displayedBrief && (
   <button
     onClick={() =>
       setBriefExpanded(!briefExpanded)
@@ -4410,7 +4504,42 @@ const leadershipCallChange =
   </button>
 )}
 
-        {executiveBrief && briefExpanded && (
+<AnimatePresence mode="wait">
+  {displayedBrief &&
+    briefExpanded && (
+      <motion.div
+        key={
+          selectedSavedReport
+            ?.id ||
+          displayedContext
+            ?.selectedMonth ||
+          "current-report"
+        }
+        initial={{
+          opacity: 0,
+          y: 18,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+        exit={{
+          opacity: 0,
+          y: 12,
+        }}
+        transition={{
+          duration: 0.28,
+        }}
+      >
+        <GlassCard
+          theme={theme}
+          className="mt-6 p-6"
+        >
+          {/* Report content goes here */}
+        </GlassCard>
+      </motion.div>
+    )}
+</AnimatePresence>
   <GlassCard
     theme={theme}
     className="mt-6 p-6"
@@ -4495,8 +4624,7 @@ const leadershipCallChange =
       {executiveBrief}
     </div>
 
-  </GlassCard>
-)}
+  </GlassCard> 
 
       </GlassCard>
     </motion.section>
@@ -4786,6 +4914,8 @@ export default function PulseIntelligence() {
   const [briefLoading, setBriefLoading] = useState(false);
   const [briefError, setBriefError] = useState("");
   const [savedReports, setSavedReports] = useState([]);
+
+  const [generatedReportContext, setGeneratedReportContext] = useState(null);
 
 
   useEffect(() => {
@@ -5492,33 +5622,8 @@ Include:
 `);
 
       setExecutiveBrief(answer);
-      setSavedReports((current) => [
-        {
-          id: Date.now(),
-          month:
-            reportContext?.selectedMonthLabel,
-          queue:
-            reportContext?.queue,
-          comparison:
-            reportContext?.comparisonExists
-              ? reportContext?.comparisonMonthLabel
-              : "No Comparison",
-            report: answer,
-            context: reportContext,
-        },
-        ...current,
-      ]);
+      setGeneratedReportContext(reportContext);
 
-      setSavedReports((current) => [
-        {
-          id: Date.now(),
-          month:
-            historicalComparisonContext
-              ?.selectedMonthLabel,
-          report: answer,
-        },
-        ...current,
-      ]);
       setShowExecutiveBrief(true);
     } catch (error) {
       console.error(
@@ -5533,12 +5638,57 @@ Include:
       );
     } finally {
       setBriefLoading(false);
+
+      const saveExecutiveReport = (
+         report,
+         reportContext
+       ) => {
+         if (
+           !report ||
+           !reportContext
+         ) {
+           return;
+         }
+       
+         const savedReport = {
+           id: Date.now(),
+       
+           report,
+       
+           context: reportContext,
+       
+           month:
+             reportContext.selectedMonthLabel ||
+             "Selected Period",
+       
+           queue:
+             reportContext.queue ||
+             "All Queues",
+       
+           comparison:
+             reportContext.comparisonExists
+               ? reportContext.comparisonMonthLabel
+               : "No Comparison",
+       
+           createdAt:
+             new Date().toISOString(),
+         };
+       
+         setSavedReports((current) => [
+           savedReport,
+           ...current,
+         ]);
+       
     }
   };
   
 
-const downloadExecutiveBriefPdf = () => {
-  if (!executiveBrief) {
+const downloadExecutiveBriefPdf = (
+   reportText = executiveBrief, 
+   reportContext =
+      generatedReportContext
+) => {
+  if (!reportText) {
     console.error(
       "No executive brief is available to download."
     );
@@ -5569,9 +5719,8 @@ const downloadExecutiveBriefPdf = () => {
     rightMargin;
 
     const comparison =
-    savedReports.length > 0
-      ? savedReports[0].context
-      : null;
+      reportContext ||
+      generatedReportContext;
 
   const primaryLabel =
     comparison?.selectedMonthLabel ||
@@ -5676,7 +5825,7 @@ const downloadExecutiveBriefPdf = () => {
   pdf.setTextColor(53, 84, 67);
 
   const normalizedBrief =
-    String(executiveBrief)
+    String(reportText)
       .replace(/\r\n/g, "\n")
       .replace(/\r/g, "\n")
       .trim();
@@ -5888,6 +6037,9 @@ const askEllie = async (prompt) => {
             <ExecutiveCenterView
               theme={theme}
               executiveBrief={executiveBrief}
+              generatedReportContext={
+               generatedReportContext
+              }
               generateExecutiveBrief={
                 generateExecutiveBrief
               }
@@ -5899,6 +6051,7 @@ const askEllie = async (prompt) => {
                 historicalComparisonContext
               }
               savedReports={savedReports}
+              saveExecutiveReport={saveExecutiveReport}
               callData={callData}
             />
           );
@@ -6041,3 +6194,4 @@ const askEllie = async (prompt) => {
   );
 }
 
+}
