@@ -4211,93 +4211,160 @@ const displayedContext =
 <AnimatePresence>
   {showSaveModal && (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40"
-    >
-      <div className="rounded-3xl bg-white p-8 shadow-2xl">
-
-        <h3 className="text-xl font-black">
-          Save Report?
-        </h3>
-
-        <p className="mt-3 text-sm">
-          Save this executive summary to Report History?
-        </p>
-
-        <div className="mt-6 flex gap-3">
-
-          <button
-            onClick={() =>
-              setShowSaveModal(false)
-            }
-            className="rounded-2xl border px-5 py-3 font-black"
-          >
-            Cancel
-          </button>
-
-          <button
-            onClick={() => {
-              
-               saveExecutiveReport(
-                  executiveBrief,
-                  generatedReportContext
-               );
-
-               setShowSaveModal(false);
-
-               setShowSavedCelebration(true);
-
-               setTimeout(() => {
-                  setShowSavedCelebration(false);
-               }, 3000);
-               
-            }}
-            className="rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white"
-          >
-            Save
-          </button>
-
-        </div>
-
-      </div>
-    </motion.div>
-  )}
-</AnimatePresence>
-
-<AnimatePresence>
-  {showSavedCelebration && (
-    <motion.div
       initial={{
         opacity: 0,
-        y: -40,
       }}
       animate={{
         opacity: 1,
-        y: 0,
       }}
       exit={{
         opacity: 0,
-        y: -40,
       }}
-      className="fixed top-8 left-1/2 z-[9999] flex -translate-x-1/2 items-center gap-4 rounded-3xl bg-white px-8 py-5 shadow-2xl"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4"
     >
-      <EllieRobot
-        size={70}
-        mood="excited"
-      />
+      <motion.div
+        initial={{
+          opacity: 0,
+          y: 20,
+          scale: 0.96,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+          scale: 1,
+        }}
+        exit={{
+          opacity: 0,
+          y: 16,
+          scale: 0.96,
+        }}
+        transition={{
+          duration: 0.25,
+        }}
+        className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl"
+      >
+        <AnimatePresence mode="wait">
+          {!showSavedCelebration ? (
+            <motion.div
+              key="save-confirmation"
+              initial={{
+                opacity: 0,
+                y: 10,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              exit={{
+                opacity: 0,
+                y: -10,
+              }}
+            >
+              <h3
+                className="text-xl font-black"
+                style={{
+                  color: theme.deep,
+                }}
+              >
+                Save Report?
+              </h3>
 
-      <div>
-        <h3 className="font-black text-emerald-700">
-          Report Saved!
-        </h3>
+              <p className="mt-3 text-sm leading-6 text-[#66766d]">
+                Save the{" "}
+                {displayedContext?.selectedMonthLabel ||
+                  "selected"}{" "}
+                executive summary to Report History?
+              </p>
 
-        <p className="text-sm">
-          I've saved this executive summary for future leadership reviews.
-        </p>
-      </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSaveModal(false);
+                    setShowSavedCelebration(false);
+                  }}
+                  className="rounded-2xl border border-[#d6dfd8] px-5 py-3 font-black"
+                  style={{
+                    color: theme.deep,
+                  }}
+                >
+                  Cancel
+                </button>
 
+                <button
+                  type="button"
+                  onClick={() => {
+                    saveExecutiveReport(
+                      displayedBrief,
+                      displayedContext
+                    );
+
+                    setShowSavedCelebration(true);
+
+                    window.setTimeout(() => {
+                      setShowSaveModal(false);
+                      setShowSavedCelebration(false);
+                    }, 2500);
+                  }}
+                  className="rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white"
+                >
+                  Save
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="save-success"
+              initial={{
+                opacity: 0,
+                scale: 0.92,
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+              }}
+              exit={{
+                opacity: 0,
+                scale: 0.92,
+              }}
+              className="text-center"
+            >
+              <motion.div
+                initial={{
+                  y: 10,
+                  rotate: -4,
+                }}
+                animate={{
+                  y: [10, -6, 0],
+                  rotate: [-4, 4, 0],
+                }}
+                transition={{
+                  duration: 0.65,
+                }}
+                className="mx-auto flex justify-center"
+              >
+                <EllieRobot
+                  size={110}
+                  waving
+                  mood="excited"
+                />
+              </motion.div>
+
+              <h3 className="mt-3 text-2xl font-black text-emerald-700">
+                Report Saved!
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-[#66766d]">
+                The{" "}
+                {displayedContext?.selectedMonthLabel ||
+                  "selected"}{" "}
+                executive summary is now available in Report
+                History.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </motion.div>
   )}
 </AnimatePresence>
@@ -4439,7 +4506,12 @@ const displayedContext =
 {executiveBrief && (
   <>
     <button
-      onClick={downloadExecutiveBriefPdf}
+      type="button"
+      onClick={()=>
+         downloadExecutiveBriefPdf(
+            displayedBrief,
+            displayedContext
+         )}
       className="rounded-2xl bg-white px-6 py-3 font-black"
     >
       Download PDF
@@ -4622,14 +4694,15 @@ const displayedContext =
       </div>
 
       <button
-        onClick={downloadExecutiveBriefPdf}
-        className="rounded-2xl px-4 py-2 text-white font-black"
-        style={{
-          background: theme.dark,
-        }}
+        type="button"
+        onClick={() =>
+        downloadExecutiveBriefPdf(
+            displayedBrief,
+            displayedContext
+         )
+        }
       >
         Download PDF
-        Save Report 
       </button>
 
     </div>
@@ -5857,10 +5930,18 @@ const downloadExecutiveBriefPdf = (
   pdf.setTextColor(53, 84, 67);
 
   const normalizedBrief =
-    String(reportText)
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n")
-      .trim();
+  String(reportText)
+  .replace(
+  /<br\s*\/?>/gi,
+  "\n"
+  )
+  .replace(
+  /&lt;br\s*\/?&gt;/gi,
+  "\n"
+  )
+  .replace(/\r\n/g, "\n")
+  .replace(/\r/g, "\n")
+  .trim();
 
   const paragraphs =
     normalizedBrief.split(/\n+/);
