@@ -4041,6 +4041,15 @@ const leadershipCallChange =
             : null,
       },
     };
+
+    const displayedBrief =
+  selectedSavedReport?.report ||
+  executiveBrief;
+
+const displayedContext =
+  selectedSavedReport?.context ||
+  generatedReportContext ||
+  leadershipReportContext;
   
   return (
     <motion.section
@@ -4230,13 +4239,20 @@ const leadershipCallChange =
 
           <button
             onClick={() => {
-              setShowSaveModal(false);
+              
+               saveExecutiveReport(
+                  executiveBrief,
+                  generatedReportContext
+               );
 
-              setShowSavedCelebration(true);
+               setShowSaveModal(false);
 
-              setTimeout(() => {
-                setShowSavedCelebration(false);
-              }, 3000);
+               setShowSavedCelebration(true);
+
+               setTimeout(() => {
+                  setShowSavedCelebration(false);
+               }, 3000);
+               
             }}
             className="rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white"
           >
@@ -4431,9 +4447,7 @@ const leadershipCallChange =
   </>
 )}
 <button
-  onClick={() =>
-    setShowSaveModal(true)
-  }
+  
   className="rounded-2xl bg-emerald-600 px-6 py-3 font-black text-white"
 >
   Save Report
@@ -5562,25 +5576,22 @@ const generateEllieAnswer = async (prompt) => {
   return answer.trim();
 };
 
-  const generateExecutiveBrief =
-  async (reportContext) => {
-    if (
-      !reportContext?.selectedMonth
-    ) {
-      setBriefError(
-        "Select a reporting month first."
-      );
+const generateExecutiveBrief =
+async (reportContext) => {
+  if (!reportContext?.selectedMonth) {
+    setBriefError(
+      "Select a reporting month first."
+    );
 
-      return;
-    }
+    return;
+  }
 
-    setBriefLoading(true);
-    setBriefError("");
+  setBriefLoading(true);
+  setBriefError("");
 
-    try {
-      const answer =
-  await generateEllieAnswer(`
-
+  try {
+    const answer =
+      await generateEllieAnswer(`
 Leadership report configuration:
 
 Queue:
@@ -5591,96 +5602,117 @@ ${reportContext.selectedMonthLabel}
 
 Comparison:
 ${
-  reportContext.comparisonExists
-    ? reportContext.comparisonMonthLabel
-    : "No comparison"
+reportContext.comparisonExists
+  ? reportContext.comparisonMonthLabel
+  : "No comparison"
 }
 
 Selected metrics:
 ${JSON.stringify(
-  reportContext.selectedMetrics
+reportContext.selectedMetrics
 )}
 
 Comparison metrics:
 ${JSON.stringify(
-  reportContext.comparisonMetrics
+reportContext.comparisonMetrics
 )}
 
 Metric changes:
 ${JSON.stringify(
-  reportContext.changes
+reportContext.changes
 )}
 
-Create a concise executive leadership report.
+Create a concise executive leadership report of no more than 500 words.
 
-Include:
-- Executive Overview
-- Performance Analysis
-- Key Findings
-- Operational Risks
-- Recommended Actions
+Use exactly four sections:
+
+1. Executive Overview
+2. Key Findings
+3. Operational Risks
+4. Recommended Actions
+
+Avoid repeating metrics.
+Avoid methodology or data limitation sections.
+Keep recommendations concise and actionable.
+Write for leadership.
 `);
 
-      setExecutiveBrief(answer);
-      setGeneratedReportContext(reportContext);
+    setExecutiveBrief(answer);
 
-      setShowExecutiveBrief(true);
-    } catch (error) {
-      console.error(
-        "Executive brief error:",
-        error
-      );
+    setGeneratedReportContext(
+      reportContext
+    );
 
-      setBriefError(
-        error instanceof Error
-          ? error.message
-          : "The executive brief could not be generated."
-      );
-    } finally {
-      setBriefLoading(false);
+    setShowExecutiveBrief(true);
+  } catch (error) {
+    console.error(
+      "Executive brief error:",
+      error
+    );
 
-      const saveExecutiveReport = (
-         report,
-         reportContext
-       ) => {
-         if (
-           !report ||
-           !reportContext
-         ) {
-           return;
-         }
-       
-         const savedReport = {
-           id: Date.now(),
-       
-           report,
-       
-           context: reportContext,
-       
-           month:
-             reportContext.selectedMonthLabel ||
-             "Selected Period",
-       
-           queue:
-             reportContext.queue ||
-             "All Queues",
-       
-           comparison:
-             reportContext.comparisonExists
-               ? reportContext.comparisonMonthLabel
-               : "No Comparison",
-       
-           createdAt:
-             new Date().toISOString(),
-         };
-       
-         setSavedReports((current) => [
-           savedReport,
-           ...current,
-         ]);
-       
-    }
-  };
+    setBriefError(
+      error instanceof Error
+        ? error.message
+        : "The executive brief could not be generated."
+    );
+  } finally {
+    setBriefLoading(false);
+  }
+};
+
+const saveExecutiveReport = (
+   report,
+   reportContext
+ ) => {
+   if (!report || !reportContext) {
+     return;
+   }
+ 
+   const savedReport = {
+     id: Date.now(),
+ 
+     report,
+ 
+     context: reportContext,
+ 
+     month:
+       reportContext.selectedMonthLabel ||
+       "Selected Period",
+ 
+     queue:
+       reportContext.queue ||
+       "All Queues",
+ 
+     comparison:
+       reportContext.comparisonExists
+         ? reportContext.comparisonMonthLabel
+         : "No Comparison",
+ 
+     createdAt:
+       new Date().toISOString(),
+   };
+ 
+   setSavedReports((current) => {
+     const alreadySaved =
+       current.some(
+         (item) =>
+           item.report === report &&
+           item.context?.selectedMonth ===
+             reportContext.selectedMonth &&
+           item.context?.queue ===
+             reportContext.queue
+       );
+ 
+     if (alreadySaved) {
+       return current;
+     }
+ 
+     return [
+       savedReport,
+       ...current,
+     ];
+   });
+ };
   
 
 const downloadExecutiveBriefPdf = (
@@ -6192,6 +6224,7 @@ const askEllie = async (prompt) => {
       />
     </div>
   );
-}
+} 
 
-}
+
+
