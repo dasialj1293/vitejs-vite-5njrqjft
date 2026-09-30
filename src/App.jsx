@@ -4197,16 +4197,7 @@ const displayedContext =
   </div>
 </div>
 
-        <div className="mt-6">
-  <p className="mb-3 text-xs font-black uppercase tracking-widest text-[#7b8d81]">
-    Reporting Period
-  </p>
 
-  <div className="flex flex-wrap gap-2">
-
-    
-  </div>
-</div>
 
 <AnimatePresence>
   {showSaveModal && (
@@ -4294,18 +4285,21 @@ const displayedContext =
                 <button
                   type="button"
                   onClick={() => {
-                    saveExecutiveReport(
-                      displayedBrief,
-                      displayedContext
-                    );
 
-                    setShowSavedCelebration(true);
-
-                    window.setTimeout(() => {
-                      setShowSaveModal(false);
-                      setShowSavedCelebration(false);
-                    }, 2500);
-                  }}
+                     saveExecutiveReport(
+                       executiveBrief,
+                       generatedReportContext
+                     );
+                   
+                     setShowSaveModal(false);
+                   
+                     setShowSavedCelebration(true);
+                   
+                     setTimeout(() => {
+                       setShowSavedCelebration(false);
+                     }, 3000);
+                   
+                   }}
                   className="rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white"
                 >
                   Save
@@ -4652,10 +4646,6 @@ const displayedContext =
       : "No Comparison"
   }
 </p>
-
-<h3 className="font-black">
-  Executive Snapshot
-</h3>
 
 <p className="mt-2 text-sm">
   Volume:
