@@ -4291,13 +4291,12 @@ const displayedContext =
                        generatedReportContext
                      );
                    
-                     setShowSaveModal(false);
-                   
                      setShowSavedCelebration(true);
                    
                      setTimeout(() => {
+                       setShowSaveModal(false);
                        setShowSavedCelebration(false);
-                     }, 3000);
+                     }, 2500);
                    
                    }}
                   className="rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white"
@@ -4513,7 +4512,10 @@ const displayedContext =
   </>
 )}
 <button
-  
+  type="button"
+  onClick={() =>
+    setShowSaveModal(true)
+  }
   className="rounded-2xl bg-emerald-600 px-6 py-3 font-black text-white"
 >
   Save Report
