@@ -4364,9 +4364,13 @@ const displayedContext =
         
         <div className="mt-6 flex gap-3">
           <button
-            onClick={() =>
-              generateExecutiveBrief(leadershipReportContext)
-            }
+            onClick={() => {
+               setSelectedSavedReport(null);
+
+               setBriefExpanded(true);
+            
+              generateExecutiveBrief(leadershipReportContext);
+            }}
             disabled={
               briefLoading ||
               !leadershipMonth
