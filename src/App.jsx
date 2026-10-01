@@ -21,6 +21,7 @@ import {
   PhoneCall,
   Send,
   Sparkles,
+  Settings2,
   TrendingUp,
   UserRound,
   WandSparkles,
@@ -519,29 +520,40 @@ function FloatingEllie({
                 background: `linear-gradient(135deg, ${theme.deep}, ${theme.dark}, ${theme.mid})`,
               }}
             >
-              <div className="flex items-center gap-3">
-                <div className="rounded-[20px] bg-white/14 p-1 ring-1 ring-white/20">
-                  <EllieRobot
-                    size={68}
-                    waving
-                    mood={mood}
-                    themeName={ellieTheme}
-                    outfit={outfit}
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-lg font-black">Ellie AI</h3>
-                  <p className="text-xs text-white/65">Your Pulse intelligence guide</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="grid h-9 w-9 place-items-center rounded-xl bg-white/10 hover:bg-white/20"
-                  aria-label="Close Ellie"
-                >
-                  <X size={17} />
-                </button>
-              </div>
+              <div className="flex items-center gap-4">
+  <div
+    className="grid h-20 w-20 shrink-0 place-items-center rounded-[24px] ring-1 ring-white/30"
+    style={{
+      background: theme.light,
+    }}
+  >
+    <EllieRobot
+      size={72}
+      mood="happy"
+      themeName={ellieTheme}
+      outfit={outfit}
+    />
+  </div>
+
+  <div className="min-w-0 flex-1">
+    <h2 className="text-3xl font-black">
+      Ellie AI
+    </h2>
+
+    <p className="mt-1 text-sm text-white/75">
+      Your Pulse intelligence guide
+    </p>
+  </div>
+
+  <button
+    type="button"
+    onClick={() => setOpen(false)}
+    className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15 transition hover:bg-white/25"
+    aria-label="Close Ask Ellie AI"
+  >
+    <X size={20} />
+  </button>
+</div>
 
               <button
                 type="button"
@@ -709,7 +721,7 @@ function FloatingEllie({
   );
 }
 
-function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMetric, metrics, dynamicInsights,}) {
+function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMetric, metrics, dynamicInsights, ellieOpen, setEllieOpen,}) {
   return (
     <motion.section
       key="overview"
@@ -785,14 +797,26 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
                 Ask questions, explore forecasts, understand risks, generate leadership summaries, and identify opportunities to improve customer experience.
               </p>
               <button
-                type="button"
-                onClick={() => askEllie("Why are Credit repeat contacts growing?")}
-                className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-black shadow-lg"
-                style={{ color: theme.dark }}
-              >
-                <EllieRobot size={34} themeName={ellieTheme} outfit={outfit} />
-                Ask Ellie about this
-              </button>
+  type="button"
+  onClick={() =>
+    setEllieOpen(
+      !ellieOpen
+    )
+  }
+  className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-black shadow-lg"
+  style={{ color: theme.dark }}
+>
+  <EllieRobot
+    size={34}
+    themeName={ellieTheme}
+    outfit={outfit}
+  />
+
+  {ellieOpen
+    ? "Hide Ellie"
+    : "Ask Ellie"}
+</button>
+
             </div>
             <div className="flex items-center justify-center rounded-[24px] border border-white/20 bg-white/10 p-4 backdrop-blur-xl">
               <EllieRobot size={150} waving themeName={ellieTheme} outfit={outfit} />
@@ -5122,9 +5146,308 @@ function UploadDataButton({ onDataLoaded }) {
    );
  }
 
+ function AskEllieView({
+  theme,
+  messages,
+  ellieTheme,
+  setEllieTheme,
+  outfit,
+  setOutfit,
+  inlineEllieQuestion,
+  setInlineEllieQuestion,
+  askEllie,
+  closeWorkspace,
+}) {
+  const [showCustomization, setShowCustomization] =
+    useState(true);
+
+  const quickPrompts = [
+    "Why are repeats rising?",
+    "Show forecast",
+    "Explain FCR",
+    "Tell me a joke",
+  ];
+
+  const submitQuestion = () => {
+    const question = inlineEllieQuestion.trim();
+
+    if (!question) return;
+
+    askEllie(question);
+    setInlineEllieQuestion("");
+  };
+
+  return (
+    <motion.section
+      key="ask-ellie-view"
+      initial={{
+        opacity: 0,
+        y: 12,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      exit={{
+        opacity: 0,
+        y: -12,
+      }}
+      transition={{
+        duration: 0.25,
+      }}
+      className="mx-auto max-w-5xl"
+    >
+      <GlassCard
+        theme={theme}
+        className="overflow-hidden rounded-[34px] p-0"
+      >
+        <div
+          className="p-6 text-white"
+          style={{
+            background: `linear-gradient(135deg, ${theme.deep}, ${theme.dark}, ${theme.mid})`,
+          }}
+        >
+          <div className="flex items-center gap-4">
+          <button
+  type="button"
+  onClick={closeWorkspace}
+  className="ml-auto grid h-11 w-11 place-items-center rounded-2xl bg-white/15 hover:bg-white/25 transition"
+>
+  ✕
+</button>
+            <div
+              className="grid h-20 w-20 shrink-0 place-items-center rounded-[24px] ring-1 ring-white/30"
+              style={{
+                background: theme.light,
+              }}
+            >
+              <EllieRobot
+                size={72}
+                mood="happy"
+                themeName={ellieTheme}
+                outfit={outfit}
+              />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <h2 className="text-3xl font-black">
+                Ellie AI
+              </h2>
+
+              <p className="mt-1 text-sm text-white/75">
+                Your Pulse intelligence guide
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              setShowCustomization((current) => !current)
+            }
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-[22px] bg-white/15 px-5 py-4 text-sm font-bold transition hover:bg-white/20"
+          >
+            <Settings2 size={17} />
+
+            {showCustomization
+              ? "Hide customization"
+              : "Customize Ellie"}
+          </button>
+        </div>
+
+        <AnimatePresence initial={false}>
+          {showCustomization && (
+            <motion.div
+              initial={{
+                opacity: 0,
+                height: 0,
+              }}
+              animate={{
+                opacity: 1,
+                height: "auto",
+              }}
+              exit={{
+                opacity: 0,
+                height: 0,
+              }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-4 border-b border-white/70 bg-white/70 p-6">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {["Sage", "Mint", "Forest", "Lavender"].map(
+                    (option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() =>
+                          setEllieTheme(option)
+                        }
+                        className={`rounded-[20px] px-4 py-4 font-bold transition ${
+                          ellieTheme === option
+                            ? "text-white shadow-md"
+                            : "bg-white text-[#355443]"
+                        }`}
+                        style={
+                          ellieTheme === option
+                            ? {
+                                background: theme.dark,
+                              }
+                            : {}
+                        }
+                      >
+                        {option}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    "Classic",
+                    "Bow",
+                    "Headphones",
+                    "Analyst",
+                  ].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setOutfit(option)}
+                      className={`rounded-[20px] px-4 py-4 font-bold transition ${
+                        outfit === option
+                          ? "text-white shadow-md"
+                          : "bg-white text-[#355443]"
+                      }`}
+                      style={
+                        outfit === option
+                          ? {
+                              background: theme.dark,
+                            }
+                          : {}
+                      }
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="flex h-[650px] flex-col bg-[#edf5e6]">
+          <div className="flex-1 space-y-5 overflow-y-auto p-6 sm:p-8">
+            {messages.map((message, index) => (
+              <motion.div
+                key={`${message.role}-${index}`}
+                initial={{
+                  opacity: 0,
+                  y: 8,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                className={`flex items-end gap-3 ${
+                  message.role === "user"
+                    ? "justify-end"
+                    : "justify-start"
+                }`}
+              >
+                {message.role !== "user" && (
+                  <div
+                    className="grid h-12 w-12 shrink-0 place-items-center rounded-full"
+                    style={{
+                      background: theme.light,
+                    }}
+                  >
+                    <EllieRobot
+                      size={43}
+                      mood="happy"
+                      themeName={ellieTheme}
+                      outfit={outfit}
+                    />
+                  </div>
+                )}
+
+                <div
+                  className={`max-w-[80%] whitespace-pre-line rounded-[24px] px-5 py-4 text-sm leading-7 shadow-sm ${
+                    message.role === "user"
+                      ? "rounded-br-md text-white"
+                      : "rounded-bl-md border border-white bg-white text-[#355443]"
+                  }`}
+                  style={
+                    message.role === "user"
+                      ? {
+                          background: theme.dark,
+                        }
+                      : {}
+                  }
+                >
+                  {message.content}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="border-t border-white/70 bg-[#f7faF3] p-4 sm:p-6">
+            <div className="mb-3 flex gap-2 overflow-x-auto pb-2">
+              {quickPrompts.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  onClick={() => askEllie(prompt)}
+                  className="shrink-0 rounded-full border border-white bg-white px-5 py-3 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  style={{
+                    color: theme.deep,
+                  }}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3 rounded-[26px] border border-white bg-white p-2 shadow-sm">
+              <input
+                type="text"
+                value={inlineEllieQuestion}
+                onChange={(event) =>
+                  setInlineEllieQuestion(event.target.value)
+                }
+                onKeyDown={(event) => {
+                  if (
+                    event.key === "Enter" &&
+                    !event.shiftKey
+                  ) {
+                    event.preventDefault();
+                    submitQuestion();
+                  }
+                }}
+                placeholder="Ask Ellie anything..."
+                className="min-w-0 flex-1 bg-transparent px-5 py-4 text-sm text-[#355443] outline-none placeholder:text-[#9bad9f]"
+              />
+
+              <button
+                type="button"
+                onClick={submitQuestion}
+                disabled={!inlineEllieQuestion.trim()}
+                className="grid h-13 w-13 shrink-0 place-items-center rounded-full p-4 text-white transition enabled:hover:scale-105 disabled:cursor-not-allowed disabled:opacity-40"
+                style={{
+                  background: theme.dark,
+                }}
+                aria-label="Send message to Ellie"
+              >
+                <Send size={19} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+    </motion.section>
+  );
+}
+
 export default function PulseIntelligence() {
   const [activeTab, setActiveTab] = useState("Overview");
-  const [ellieOpen, setEllieOpen] = useState(false);
   const [messages, setMessages] = useState(starterMessages);
   const [ellieTheme, setEllieTheme] = useState("Sage");
   const [outfit, setOutfit] = useState("Classic");
@@ -5142,6 +5465,11 @@ export default function PulseIntelligence() {
   const [savedReports, setSavedReports] = useState([]);
 
   const [generatedReportContext, setGeneratedReportContext] = useState(null);
+  const [ellieOpen, setEllieOpen] = useState(false);
+  const [inlineEllieQuestion, setInlineEllieQuestion] = useState("");
+  const [showEllieWorkspace, setShowEllieWorkspace] = useState(false);
+
+
 
 
   useEffect(() => {
@@ -6227,8 +6555,6 @@ const askEllie = async (prompt) => {
 
   if (!text) return;
 
-  setEllieOpen(true);
-
   setMessages((current) => [
     ...current,
     {
@@ -6278,6 +6604,17 @@ const askEllie = async (prompt) => {
     );
   };
 
+  const sendInlineEllieQuestion = async () => {
+   const question =
+     inlineEllieQuestion.trim();
+ 
+   if (!question) return;
+ 
+   setInlineEllieQuestion("");
+ 
+   await askEllie(question);
+ };
+
   const renderActiveView = () => {
     switch (activeTab) {
       case "Queue Analytics":
@@ -6307,6 +6644,7 @@ const askEllie = async (prompt) => {
               callData={callData}
             />
           );
+
       default:
         return (
           <OverviewView
@@ -6318,6 +6656,11 @@ const askEllie = async (prompt) => {
             explainMetric={explainMetric}
             metrics={dynamicMetrics}
             dynamicInsights={dynamicInsights}
+            messages={messages}
+            setMessages={setMessages}
+            generateEllieAnswer={generateEllieAnswer}
+            ellieOpen={ellieOpen}
+            setEllieOpen={setEllieOpen}
           />
         );
     }
@@ -6422,29 +6765,63 @@ const askEllie = async (prompt) => {
           </GlassCard>
         </div>
 
-        <AnimatePresence mode="wait">
-  {renderActiveView()}
+        <GlassCard
+  className="mb-6 p-2"
+  theme={theme}
+>
+  <button
+    type="button"
+    onClick={() => {
+      setShowEllieWorkspace(true);
+    }}
+    className="w-full rounded-[18px] px-4 py-4 text-sm font-black text-white transition hover:opacity-95"
+    style={{
+      background: theme.dark,
+    }}
+  >
+    Ask Ellie AI
+  </button>
+</GlassCard>
+
+<AnimatePresence mode="wait">
+  {showEllieWorkspace ? (
+    <AskEllieView
+      theme={theme}
+      messages={messages}
+      ellieTheme={ellieTheme}
+      setEllieTheme={setEllieTheme}
+      outfit={outfit}
+      setOutfit={setOutfit}
+      inlineEllieQuestion={inlineEllieQuestion}
+      setInlineEllieQuestion={setInlineEllieQuestion}
+      askEllie={askEllie}
+      closeWorkspace={() =>
+        setShowEllieWorkspace(false)
+      }
+    />
+  ) : (
+    renderActiveView()
+  )}
 </AnimatePresence>
 
-        <footer className="py-7 text-center text-xs text-[#74857b]">
-          This is the prototype containing synthetic data. 
-        </footer>
-      </main>
+<footer className="py-7 text-center text-xs text-[#74857b]">
+  This prototype contains synthetic data.
+</footer>
+</main>
 
-      <FloatingEllie
-        open={ellieOpen}
-        setOpen={setEllieOpen}
-        messages={messages}
-        setMessages={setMessages}
-        ellieTheme={ellieTheme}
-        setEllieTheme={setEllieTheme}
-        outfit={outfit}
-        setOutfit={setOutfit}
-        generateEllieAnswer={generateEllieAnswer}
-      />
-    </div>
+{!showEllieWorkspace && (
+  <FloatingEllie
+    open={ellieOpen}
+    setOpen={setEllieOpen}
+    messages={messages}
+    setMessages={setMessages}
+    ellieTheme={ellieTheme}
+    setEllieTheme={setEllieTheme}
+    outfit={outfit}
+    setOutfit={setOutfit}
+    generateEllieAnswer={generateEllieAnswer}
+  />
+)}
+</div>
   );
-} 
-
-
-
+}
