@@ -5160,6 +5160,24 @@ function UploadDataButton({ onDataLoaded }) {
 }) {
   const [showCustomization, setShowCustomization] =
     useState(true);
+  
+    const elliePaletteOptions = [
+      "Sage",
+      "Mint",
+      "Forest",
+      "Lavender",
+    ].map((name) => {
+      const palette = ellieThemes[name];
+    
+      return {
+        name,
+        colors: [
+          palette?.deep,
+          palette?.mid,
+          palette?.light,
+        ].filter(Boolean),
+      };
+    });
 
   const quickPrompts = [
     "Why are repeats rising?",
@@ -5273,35 +5291,60 @@ function UploadDataButton({ onDataLoaded }) {
               className="overflow-hidden"
             >
               <div className="space-y-4 border-b border-white/70 bg-white/70 p-6">
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {["Sage", "Mint", "Forest", "Lavender"].map(
-                    (option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() =>
-                          setEllieTheme(option)
-                        }
-                        className={`rounded-[20px] px-4 py-4 font-bold transition ${
-                          ellieTheme === option
-                            ? "text-white shadow-md"
-                            : "bg-white text-[#355443]"
-                        }`}
-                        style={
-                          ellieTheme === option
-                            ? {
-                                background: theme.dark,
-                              }
-                            : {}
-                        }
-                      >
-                        {option}
-                      </button>
-                    )
-                  )}
-                </div>
+                <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+                  </div>
+                {elliePaletteOptions.map((palette) => {
+  const isSelected =
+    ellieTheme === palette.name;
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+  return (
+    <button
+      key={palette.name}
+      type="button"
+      onClick={() =>
+        setEllieTheme(palette.name)
+      }
+      className={`rounded-[20px] border px-4 py-4 text-left transition ${
+        isSelected
+          ? "border-transparent text-white shadow-lg"
+          : "border-white/80 bg-white text-[#355443] shadow-sm hover:-translate-y-0.5 hover:shadow-md"
+      }`}
+      style={
+        isSelected
+          ? {
+              background: theme.dark,
+            }
+          : {}
+      }
+    >
+      <div className="flex items-center gap-2">
+        {palette.colors.map((color) => (
+          <span
+            key={color}
+            className="h-10 w-10 rounded-full border-2 border-white shadow-sm"
+            style={{
+              background: color,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <span className="text-sm font-black">
+          {palette.name}
+        </span>
+
+        {isSelected && (
+          <span className="text-xs font-black">
+            Selected
+          </span>
+        )}
+      </div>
+    </button>
+  );
+})}
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {[
                     "Classic",
                     "Bow",
@@ -5383,7 +5426,7 @@ function UploadDataButton({ onDataLoaded }) {
                       : {}
                   }
                 >
-                  {message.content}
+                  {message.text || message.content}
                 </div>
               </motion.div>
             ))}
@@ -6772,14 +6815,16 @@ const askEllie = async (prompt) => {
   <button
     type="button"
     onClick={() => {
-      setShowEllieWorkspace(true);
+      setShowEllieWorkspace((current) => !current );
     }}
     className="w-full rounded-[18px] px-4 py-4 text-sm font-black text-white transition hover:opacity-95"
     style={{
       background: theme.dark,
     }}
   >
-    Ask Ellie AI
+    {showEllieWorkspace
+      ? "Return to Dashboard"
+      : "Ask Ellie AI"}
   </button>
 </GlassCard>
 
