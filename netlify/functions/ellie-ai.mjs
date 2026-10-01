@@ -41,10 +41,12 @@ export default async function handler(
       const {
         question,
         context,
+        mode = "chat",
       } = await request.json();
   
       const cleanedQuestion =
         String(question || "").trim();
+      
   
       if (!cleanedQuestion) {
         return new Response(
@@ -58,6 +60,11 @@ export default async function handler(
           }
         );
       }
+
+      const responseMode =
+        mode === "executive"
+          ? "executive"
+          : "chat";
   
       if (
         !process.env.OPENAI_API_KEY
@@ -67,7 +74,7 @@ export default async function handler(
         );
       }
   
-      const systemInstructions = `
+      const executiveInstructions = `
   You are Ellie, the AI analytics assistant inside Pulse Intelligence.
   
   Your job is to answer questions about customer-service analytics using only the supplied Pulse context.
@@ -204,7 +211,39 @@ If the KPI Snapshot table is missing, regenerate the response until the table is
 The KPI Snapshot table is mandatory and may never be omitted.
 
   `;
+
+  const chatInstructions = `
+  You are Ellie, the friendly AI analytics assistant inside Pulse Intelligence.
   
+  Your job is to answer questions about customer-service analytics using only the supplied Pulse context.
+  
+  CHAT RESPONSE RULES
+  
+  - Answer the user's specific question directly.
+  - Normally respond in 2 to 5 sentences.
+  - Keep standard responses between 50 and 120 words.
+  - Include relevant KPI values or contact-driver details when available.
+  - Give enough detail to explain what the result means.
+  - Lead with the most important finding.
+  - Include one practical next step when appropriate.
+  - Use a friendly, natural, professional tone.
+  - Vary sentence structure and wording naturally.
+  - Do not repeatedly use the same opening phrase.
+  - Do not generate an executive summary unless executive mode is selected.
+  - Do not include a KPI table in normal chat.
+  - Do not use report sections in normal chat.
+  - Do not repeat every metric in the supplied context.
+  - Do not invent causes that are not supported by the Pulse context.
+  - If the context cannot answer the question, clearly say what information is unavailable.
+  - If the user asks a general definition, explain it simply and relate it to customer-service operations.
+  - If the user asks for a joke, provide one brief, workplace-appropriate joke.
+  `;
+  
+  const systemInstructions =
+  responseMode === "executive"
+    ? executiveInstructions
+    : chatInstructions;
+
       const aiResponse =
         await fetch(
           process.env
@@ -233,10 +272,16 @@ The KPI Snapshot table is mandatory and may never be omitted.
               },
 
               text: {
-                verbosity: "medium",
+                verbosity: 
+                  responseMode === "executive"
+                    ? "medium"
+                    : "low",
               },
 
-              max_output_tokens: 1800, 
+              max_output_tokens: 
+                responseMode === "executive"
+                  ? 1800
+                  : 350, 
 
   
               input: `

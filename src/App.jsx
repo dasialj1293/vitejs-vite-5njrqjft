@@ -93,7 +93,7 @@ const ellieThemes = {
     pageGlow: "#F6B9D3",
     glow: "#F29BC2",
     cardTint: "rgba(249,220,232,0.65)",
-    page: "#FFF6FA",
+    page: "#FFF7FB",
   },
   
 };
@@ -5231,7 +5231,7 @@ function UploadDataButton({ onDataLoaded }) {
       transition={{
         duration: 0.25,
       }}
-      className="mx-auto max-w-5xl"
+      className="mx-auto max-w-7xl"
     >
       <GlassCard
         theme={theme}
@@ -6079,7 +6079,7 @@ const analyticsContext = useMemo(
   ]
 );
 
-const generateEllieAnswer = async (prompt) => {
+const generateEllieAnswer = async (prompt, mode = "chat") => {
   const ellieEndpoint =
   "/.netlify/functions/ellie-ai";
 
@@ -6096,6 +6096,7 @@ const generateEllieAnswer = async (prompt) => {
       body: JSON.stringify({
         question: prompt,
         context: analyticsContext,
+        mode,
       }),
     }
   
@@ -6236,7 +6237,9 @@ Avoid repeating metrics.
 Avoid methodology or data limitation sections.
 Keep recommendations concise and actionable.
 Write for leadership.
-`);
+`,
+  "executive"
+);
 
     setExecutiveBrief(answer);
 
