@@ -40,6 +40,17 @@ import {
 
 
 const ellieThemes = {
+  Avangrid: {
+    dark: "#1FB55C",
+    deep: "#13743C",
+    mid: "#11A5E5",
+    light: "#FFF1DD",     // more orange tint
+    accent: "#F89A1C",
+    page: "#FFF6EA",      // warmer background
+    pageGlow: "#FFD8A6",  // orange glow
+    glow: "#FFB24D",      // stronger orange glow
+    cardTint: "rgba(255,241,221,.80)",
+  },
   Sage: {
     page: "#e6eee0",
     pageGlow: "#92ae7b",
@@ -5179,6 +5190,7 @@ function UploadDataButton({ onDataLoaded }) {
     useState(true);
   
     const elliePaletteOptions = [
+      "Avangrid",
       "Sage",
       "Mint",
       "Sky",
@@ -5238,11 +5250,19 @@ function UploadDataButton({ onDataLoaded }) {
         className="overflow-hidden rounded-[34px] p-0"
       >
         <div
-          className="p-6 text-white"
-          style={{
-            background: `linear-gradient(135deg, ${theme.deep}, ${theme.dark}, ${theme.mid})`,
-          }}
-        >
+   className="p-6 text-white"
+   style={{
+     background:
+       ellieTheme === "Avangrid"
+         ? "linear-gradient(135deg, #1FB55C 0%, #11A5E5 45%, #F89A1C 100%)"
+         : `linear-gradient(
+             135deg,
+             ${theme.deep},
+             ${theme.dark},
+             ${theme.mid}
+           )`,
+   }}
+ >
           <div className="flex items-center gap-4">
           <button
   type="button"
@@ -5353,7 +5373,12 @@ function UploadDataButton({ onDataLoaded }) {
         </span>
 
         {isSelected && (
-          <span className="text-xs font-black">
+          <span className="text-xs font-black"
+            className="text-xs font-black"
+            style={{
+              color: "#f89a1c"
+            }}
+            >
             Selected
           </span>
         )}
