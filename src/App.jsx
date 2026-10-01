@@ -62,16 +62,16 @@ const ellieThemes = {
     glow: "#9ff0d2",
     accent: "#ffd07a",
   },
-  Forest: {
-    page: "#e1eade",
-    pageGlow: "#67a75e",
-    cardTint: "#edf4e9",
-    light: "#d8edce",
-    mid: "#68a85f",
-    dark: "#214d35",
-    deep: "#153a27",
-    glow: "#91d77d",
-    accent: "#f4bf69",
+  Sky: {
+    dark: "#4A90E2",
+    deep: "#2F6FB9",
+    mid: "#8DBBFF",
+    light: "#DDEEFF",
+    accent: "#8DBBFF",
+    pageGlow: "#B9D8FF",
+    glow: "#7EB5FF",
+    cardTint: "rgba(221,238,255,0.6)",
+    page: "#F5FAFF",
   },
   Lavender: {
     page: "#eeeaf6",
@@ -84,6 +84,18 @@ const ellieThemes = {
     glow: "#d7c8ff",
     accent: "#ffd085",
   },
+  Blush: {
+    dark: "#C84C8A",
+    deep: "#9F3068",
+    mid: "#E88DB4",
+    light: "#F9DCE8",
+    accent: "#E88DB4",
+    pageGlow: "#F6B9D3",
+    glow: "#F29BC2",
+    cardTint: "rgba(249,220,232,0.65)",
+    page: "#FFF6FA",
+  },
+  
 };
 
 
@@ -92,7 +104,7 @@ const ellieThemes = {
 const starterMessages = [
   {
     role: "ellie",
-    text: "Hi Dasia! I’m Ellie. I can explain queue trends, repeat-contact drivers, forecasts, and recommended actions.",
+    text: "Hi! I’m Ellie. I can explain queue trends, repeat-contact drivers, forecasts, and recommended actions.",
     createdAt: new Date().toISOString(),
   },
 ];
@@ -405,7 +417,7 @@ function FloatingEllie({
     "My therapist says I should stop counting calls. I told them it's literally my job.",
     "What's a contact center's favorite exercise? Repeat reps.",
     "I tried being a customer once. The queue analytics were fascinating.",
-    "Dasia loves collecting vinyl."
+    "The creator of this model loves collecting vinyl :)."
   ]
 
   const getNextJoke = () => {
@@ -525,6 +537,11 @@ function FloatingEllie({
     className="grid h-20 w-20 shrink-0 place-items-center rounded-[24px] ring-1 ring-white/30"
     style={{
       background: theme.light,
+      boxShadow: `
+        0 0 18px ${theme.glow},
+        0 0 36px ${theme.glow},
+        0 0 54px ${theme.glow}
+        `,
     }}
   >
     <EllieRobot
@@ -5164,8 +5181,9 @@ function UploadDataButton({ onDataLoaded }) {
     const elliePaletteOptions = [
       "Sage",
       "Mint",
-      "Forest",
+      "Sky",
       "Lavender",
+      "Blush",
     ].map((name) => {
       const palette = ellieThemes[name];
     
@@ -5291,7 +5309,7 @@ function UploadDataButton({ onDataLoaded }) {
               className="overflow-hidden"
             >
               <div className="space-y-4 border-b border-white/70 bg-white/70 p-6">
-                <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
                   </div>
                 {elliePaletteOptions.map((palette) => {
   const isSelected =
