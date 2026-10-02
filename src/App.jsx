@@ -2758,15 +2758,15 @@ const parseDashboardDate = (value) => {
           y2="1"
         >
           <stop
-            offset="0%"
-            stopColor={theme.accent}
+            offset="5%"
+            stopColor="d89a2b"
             stopOpacity={0.3}
           />
 
           <stop
-            offset="100%"
-            stopColor={theme.accent}
-            stopOpacity={0.02}
+            offset="95%"
+            stopColor="d89a2b"
+            stopOpacity={0.03}
           />
         </linearGradient>
       </defs>
