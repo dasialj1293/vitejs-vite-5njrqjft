@@ -44,12 +44,12 @@ const ellieThemes = {
     dark: "#1FB55C",
     deep: "#13743C",
     mid: "#11A5E5",
-    light: "#FFF1DD",     // more orange tint
-    accent: "#F89A1C",
-    page: "#FFF6EA",      // warmer background
-    pageGlow: "#FFD8A6",  // orange glow
-    glow: "#FFB24D",      // stronger orange glow
-    cardTint: "rgba(255,241,221,.80)",
+    light: "#FFE3C2",     // Enhanced: Richer orange-cream tint (swapped from #FFF1DD)
+    accent: "#F89A1C",    // The core vibrant Orange
+    page: "#FFF2E0",      // Enhanced: Warmer, noticeably orange-tinted background (swapped from #FFF6EA)
+    pageGlow: "#FFC685",  // Enhanced: Deeper ambient orange glow (swapped from #FFD8A6)
+    glow: "#FA9E26",      // Enhanced: Maximum vibrant orange branding glow (swapped from #FFB24D)
+    cardTint: "rgba(255, 227, 194, 0.85)", // Enhanced: Stronger orange-tinted opacity for the card overlay
   },
   Sage: {
     page: "#e6eee0",
@@ -5254,7 +5254,7 @@ function UploadDataButton({ onDataLoaded }) {
    style={{
      background:
        ellieTheme === "Avangrid"
-         ? "linear-gradient(135deg, #1FB55C 0%, #11A5E5 45%, #F89A1C 100%)"
+         ? "linear-gradient(135deg, #1FB55C 0%, #11A5E5 35%, #F89A1C 70%, #F89A1C 100%)"
          : `linear-gradient(
              135deg,
              ${theme.deep},
@@ -5533,13 +5533,52 @@ function UploadDataButton({ onDataLoaded }) {
 }
 
 export default function PulseIntelligence() {
-  const [activeTab, setActiveTab] = useState("Overview");
-  const [messages, setMessages] = useState(starterMessages);
-  const [ellieTheme, setEllieTheme] = useState("Sage");
-  const [outfit, setOutfit] = useState("Classic");
+  const [activeTab, setActiveTab] =
+  useState(() =>
+    localStorage.getItem(
+      "pulseActiveTab"
+    ) || "Overview"
+  );
+  useEffect(() => {
+    localStorage.setItem(
+      "pulseActiveTab",
+      activeTab
+    );
+  }, [activeTab]);
+  const [messages, setMessages] =
+  useState(() => {
+    const saved =
+      localStorage.getItem(
+        "pulseMessages"
+      );
+
+    return saved
+      ? JSON.parse(saved)
+      : starterMessages;
+  });
+  useEffect(() => {
+    localStorage.setItem(
+      "pulseMessages",
+      JSON.stringify(messages)
+    );
+  }, [messages]);
+  const [ellieTheme, setEllieTheme] = useState(() => localStorage.getItem("pulseEllieTheme") || "Sage");
+    useEffect(() => {localStorage.setItem("pulseEllieTheme", ellieTheme);}, [ellieTheme]);
+  const [outfit, setOutfit] = useState(() => localStorage.getItem("pulseEllieOutfit") || "Classic");
+    useEffect(() => {localStorage.setItem("pulseEllieOutfit", outfit);}, [outfit]);
   const [viewMode, setViewMode] = useState("Employee");
 
-  const [callData, setCallData] = useState([]);
+  const [callData, setCallData] =
+  useState(() => {
+    const saved =
+      localStorage.getItem(
+        "pulseCallData"
+      );
+
+    return saved
+      ? JSON.parse(saved)
+      : [];
+  });
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState("");
   const [historicalComparisonContext, setHistoricalComparisonContext] = useState(null);
@@ -5548,7 +5587,23 @@ export default function PulseIntelligence() {
   const [showExecutiveBrief, setShowExecutiveBrief] = useState(false);
   const [briefLoading, setBriefLoading] = useState(false);
   const [briefError, setBriefError] = useState("");
-  const [savedReports, setSavedReports] = useState([]);
+  const [savedReports, setSavedReports] =
+  useState(() => {
+    const saved =
+      localStorage.getItem(
+        "pulseSavedReports"
+      );
+
+    return saved
+      ? JSON.parse(saved)
+      : [];
+  });
+  useEffect(() => {
+    localStorage.setItem(
+      "pulseSavedReports",
+      JSON.stringify(savedReports)
+    );
+  }, [savedReports]);
 
   const [generatedReportContext, setGeneratedReportContext] = useState(null);
   const [ellieOpen, setEllieOpen] = useState(false);
@@ -5611,6 +5666,12 @@ export default function PulseIntelligence() {
        const cleanedData = cleanRows(results.data);
  
        setCallData(cleanedData);
+       useEffect(() => {
+        localStorage.setItem(
+          "pulseCallData",
+          JSON.stringify(callData)
+        );
+      }, [callData]);
  
        setDataError(
          cleanedData.length > 0
