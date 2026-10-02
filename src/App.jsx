@@ -2687,7 +2687,7 @@ const parseDashboardDate = (value) => {
         <span
           className="h-3 w-3 rounded-full"
           style={{
-            background: theme.accent,
+            background: "#d89a2b",
           }}
         />
         Projected
@@ -2758,15 +2758,15 @@ const parseDashboardDate = (value) => {
           y2="1"
         >
           <stop
-            offset="5%"
-            stopColor="d89a2b"
+            offset="0%"
+            stopColor="#d89a2b"
             stopOpacity={0.3}
           />
 
           <stop
-            offset="95%"
-            stopColor="d89a2b"
-            stopOpacity={0.03}
+            offset="100%"
+            stopColor="#d89a2b"
+            stopOpacity={0.02}
           />
         </linearGradient>
       </defs>
@@ -3401,7 +3401,7 @@ placeholder="Choose a comparison"
                       <span
                         className="h-3.5 w-3.5 rounded-full shadow-sm"
                         style={{
-                          background: theme.accent,
+                          background: theme.mid,
                         }}
                       />
                         {comparisonMonthLabel} (Comparison)
@@ -3478,20 +3478,19 @@ placeholder="Choose a comparison"
  
                        {comparisonExists && (
                          <Area
-                           key={`comparison-${comparisonMonth}-${selectedQueue}`}
-                           type="monotone"
-                           dataKey="comparison"
-                           name={comparisonMonthLabel}
-                           stroke="#b9862f"
-                           strokeWidth={3}
-                           strokeDasharray=""
-                           fill="transparent"
-                           connectNulls={false}
-                           isAnimationActive
-                           animationBegin={150}
-                           animationDuration={1100}
-                           animationEasing="ease-out"
-                         />
+                         key={`comparison-${comparisonMonth}-${selectedQueue}`}
+                         type="monotone"
+                         dataKey="comparison"
+                         name={comparisonMonthLabel}
+                         stroke={theme.mid}
+                         strokeWidth={3}
+                         fill="transparent"
+                         connectNulls={false}
+                         isAnimationActive
+                         animationBegin={150}
+                         animationDuration={1100}
+                         animationEasing="ease-out"
+                       />
                        )}
                      </AreaChart>
                    </ResponsiveContainer>
@@ -5635,6 +5634,7 @@ if (savedData) {
 
   return;
 }
+
    let cancelled = false;
  
    const cleanRows = (rows) => {
