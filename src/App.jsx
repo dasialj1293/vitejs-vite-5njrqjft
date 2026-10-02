@@ -5579,6 +5579,16 @@ export default function PulseIntelligence() {
       ? JSON.parse(saved)
       : [];
   });
+  useEffect(() => {
+    if (callData.length > 0) {
+      localStorage.setItem(
+        "pulseCallData",
+        JSON.stringify(callData)
+      );
+    }
+  }, [callData]);
+
+
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState("");
   const [historicalComparisonContext, setHistoricalComparisonContext] = useState(null);
@@ -5610,10 +5620,21 @@ export default function PulseIntelligence() {
   const [inlineEllieQuestion, setInlineEllieQuestion] = useState("");
   const [showEllieWorkspace, setShowEllieWorkspace] = useState(false);
 
-
-
-
   useEffect(() => {
+  const savedData =
+  localStorage.getItem(
+    "pulseCallData"
+  );
+
+if (savedData) {
+  setCallData(
+    JSON.parse(savedData)
+  );
+
+  setDataLoading(false);
+
+  return;
+}
    let cancelled = false;
  
    const cleanRows = (rows) => {
@@ -5666,6 +5687,7 @@ export default function PulseIntelligence() {
        const cleanedData = cleanRows(results.data);
  
        setCallData(cleanedData);
+       
        useEffect(() => {
         localStorage.setItem(
           "pulseCallData",
