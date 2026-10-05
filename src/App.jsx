@@ -5601,7 +5601,8 @@ export default function PulseIntelligence() {
 
   const [callData, setCallData] =
   useState([]);
-  
+  const [dataUpdatedAt, setDataUpdatedAt] = useState(null);
+
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState("");
   const [historicalComparisonContext, setHistoricalComparisonContext] = useState(null);
@@ -5672,12 +5673,9 @@ export default function PulseIntelligence() {
           result.data.length > 0
         ) {
           setCallData(result.data);
-          setDataError("");
-        } else {
-          setCallData([]);
-  
-          setDataError(
-            "No shared dataset has been uploaded yet."
+          
+          setDataUpdatedAt(
+            result.updatedAt || null
           );
         }
       } catch (error) {
@@ -5732,6 +5730,19 @@ export default function PulseIntelligence() {
         year: "numeric",
       }
     );
+  
+  const datasetUpdatedLabel =
+    dataUpdatedAt
+      ? new Date(
+          dataUpdatedAt
+        ).toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : "Not available";
   
   const calculatedMetrics = useMemo(() => {
     const totalCalls = callData.reduce(
@@ -6894,6 +6905,17 @@ const askEllie = async (prompt) => {
     {dynamicInsights.length}
   </p>
 </div>
+
+<div className="rounded-2xl bg-white/60 px-4 py-3 shadow-sm">
+  <p className="text-[10px] font-black uppercase">
+    Shared Dataset
+  </p>
+
+  <p className="text-sm font-black">
+    {datasetUpdatedLabel}
+  </p>
+</div>
+
 
 <div className="rounded-2xl bg-white/60 px-4 py-3 shadow-sm">
   <p className="text-[10px] font-black uppercase">
