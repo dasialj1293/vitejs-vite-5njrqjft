@@ -5544,23 +5544,7 @@ export default function PulseIntelligence() {
       activeTab
     );
   }, [activeTab]);
-  const [messages, setMessages] =
-  useState(() => {
-    const saved =
-      localStorage.getItem(
-        "pulseMessages"
-      );
-
-    return saved
-      ? JSON.parse(saved)
-      : starterMessages;
-  });
-  useEffect(() => {
-    localStorage.setItem(
-      "pulseMessages",
-      JSON.stringify(messages)
-    );
-  }, [messages]);
+  const [messages, setMessages] = useState(starterMessages);
   const [ellieTheme, setEllieTheme] = useState(() => localStorage.getItem("pulseEllieTheme") || "Sage");
     useEffect(() => {localStorage.setItem("pulseEllieTheme", ellieTheme);}, [ellieTheme]);
   const [outfit, setOutfit] = useState(() => localStorage.getItem("pulseEllieOutfit") || "Classic");
