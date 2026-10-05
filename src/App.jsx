@@ -6746,47 +6746,6 @@ const downloadExecutiveBriefPdf = (
   );
 };
 
-const loadExcelFromSharePoint =
-  async () => {
-    try {
-      const response =
-        await fetch(
-          SHAREPOINT_EXCEL_URL
-        );
-
-      const arrayBuffer =
-        await response.arrayBuffer();
-
-      const workbook =
-        XLSX.read(arrayBuffer, {
-          type: "array",
-        });
-
-      const worksheet =
-        workbook.Sheets[
-          workbook.SheetNames[0]
-        ];
-
-      const rows =
-        XLSX.utils.sheet_to_json(
-          worksheet
-        );
-
-      console.log(
-        "SharePoint Excel Rows:",
-        rows
-      );
-
-      setCallData(rows);
-
-    } catch (error) {
-      console.error(
-        "SharePoint load error:",
-        error
-      );
-    }
-  };
-
 const askEllie = async (prompt) => {
   const text = String(prompt || "").trim();
 
@@ -6978,13 +6937,6 @@ const askEllie = async (prompt) => {
   }}
 />
 
-<button
-  type="button"
-  onClick={loadExcelFromSharePoint}
-  className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white"
->
-  Load SharePoint Test
-</button>
 </div>
     
         
