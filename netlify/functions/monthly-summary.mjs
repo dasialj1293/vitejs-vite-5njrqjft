@@ -23,19 +23,16 @@ function isFirstBusinessDay() {
 }
 
 export default async () => {
-    if (!isFirstBusinessDay()) {
-        return new Response(
-            JSON.stringify({
-                message:
-                "Not the first business day."
-            })
-        );
-    }
-
     return new Response(
-        JSON.stringify({
-            message:
-                "Generate monthly summary now."
-        })
+      JSON.stringify({
+        success: true,
+        message: "Monthly summary function works!",
+        timestamp: new Date().toISOString(),
+      }),
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
-};
+  };
