@@ -5063,21 +5063,44 @@ function UploadDataButton({ onDataLoaded }) {
        );
    };
  
-   const finishLoading = (rows, fileName) => {
-     const cleanedData = normalizeRows(rows);
- 
-     if (cleanedData.length === 0) {
-       throw new Error(
-         "No valid rows were found. The file needs a Date column and a Calls, Contacts, Volume, or Call Count column."
-       );
-     }
- 
-     onDataLoaded(cleanedData);
- 
-     alert(
-       `${cleanedData.length.toLocaleString()} records loaded from ${fileName}.`
-     );
-   };
+   const finishLoading = async (rows, fileName) => {
+    const cleanedData = normalizeRows(rows);
+  
+    if (cleanedData.length === 0) {
+      throw new Error(
+        "No valid rows were found. The file needs a Date column and a Calls, Contacts, Volume, or Call Count column."
+      );
+    }
+  
+    const response = await fetch(
+      "/.netlify/functions/upload-pulse-data",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          data: cleanedData,
+        }),
+      }
+    );
+  
+    const result = await response.json();
+  
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.message ||
+          "Pulse could not save the shared dataset."
+      );
+    }
+  
+    onDataLoaded(cleanedData);
+  
+    alert(
+      `${cleanedData.length.toLocaleString()} records were loaded and shared successfully.`
+    );
+  };
  
    const parseDelimitedFile = (file, delimiter) => {
      Papa.parse(file, {
@@ -5087,10 +5110,13 @@ function UploadDataButton({ onDataLoaded }) {
        delimiter,
        transformHeader: (header) => String(header).trim(),
  
-       complete: (results) => {
-         try {
-           finishLoading(results.data, file.name);
-         } catch (error) {
+       complete: async (results) => {
+        try {
+          await finishLoading(
+            results.data,
+            file.name
+          );
+        } catch (error) {
            console.error("File processing error:", error);
  
            alert(
@@ -5135,8 +5161,12 @@ function UploadDataButton({ onDataLoaded }) {
                ? parsed.rows
                : [];
  
-         finishLoading(rows, file.name);
-         setUploading(false);
+               await finishLoading(
+                rows,
+                file.name
+              );
+              
+              setUploading(false);
          input.value = "";
          return;
        }
@@ -5182,7 +5212,7 @@ function UploadDataButton({ onDataLoaded }) {
  
        <input
          type="file"
-         accept=".csv,.tsv,.json,.txt,text/csv,text/tab-separated-values,application/json,text/plain"
+         accept=".xlsx,.xls,.csv,.tsv,.json,.txt,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/tab-separated-values,application/json,text/plain"
          onChange={handleFileUpload}
          disabled={uploading}
          className="hidden"
@@ -5570,26 +5600,8 @@ export default function PulseIntelligence() {
   const [viewMode, setViewMode] = useState("Employee");
 
   const [callData, setCallData] =
-  useState(() => {
-    const saved =
-      localStorage.getItem(
-        "pulseCallData"
-      );
-
-    return saved
-      ? JSON.parse(saved)
-      : [];
-  });
-  useEffect(() => {
-    if (callData.length > 0) {
-      localStorage.setItem(
-        "pulseCallData",
-        JSON.stringify(callData)
-      );
-    }
-  }, [callData]);
-
-
+  useState([]);
+  
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState("");
   const [historicalComparisonContext, setHistoricalComparisonContext] = useState(null);
@@ -5625,112 +5637,77 @@ export default function PulseIntelligence() {
   "https://iberdrolaus-my.sharepoint.com/:x:/r/personal/dasia_johnson_avangrid_com/Documents/Documents/Copilot/Created/Pulse_Large_Test_Dataset%201.xlsx?d=w27e945a5ff654635a17b61018c76c6da&csf=1&share=IQClReknZf81RqF7YQGMdsbaAdIO2PZTWzHMitlGJki4EwM&e=HhrPtL&download=1";
 
   useEffect(() => {
-  const savedData =
-  localStorage.getItem(
-    "pulseCallData"
-  );
-
-if (savedData) {
-  setCallData(
-    JSON.parse(savedData)
-  );
-
-  setDataLoading(false);
-
-  return;
-}
-
-   let cancelled = false;
- 
-   const cleanRows = (rows) => {
-     return rows
-       .filter(
-         (row) =>
-           row.Date &&
-           Number.isFinite(Number(row.Calls)) &&
-           Number(row.Calls) >= 0
-       )
-       .map((row) => ({
-         ...row,
- 
-         Date: String(row.Date).trim(),
- 
-         Queue: String(
-           row.Queue || "Uncategorized"
-         ).trim(),
- 
-         CallType: String(
-           row.CallType ||
-             row["Call Type"] ||
-             "Unknown"
-         ).trim(),
- 
-         Calls: Number(row.Calls) || 0,
-         RepeatCalls: Number(row.RepeatCalls) || 0,
-         ResolvedCalls: Number(row.ResolvedCalls) || 0,
-         Transfers: Number(row.Transfers) || 0,
-         Escalations: Number(row.Escalations) || 0,
- 
-         AverageHandleTime:
-           Number(row.AverageHandleTime) || 0,
-       }));
-   };
- 
-   setDataLoading(true);
- 
-   Papa.parse("/data/AcceleratorDatas.csv", {
-     download: true,
-     header: true,
-     skipEmptyLines: true,
-     dynamicTyping: true,
-     transformHeader: (header) =>
-       String(header).trim(),
- 
-     complete: (results) => {
-       if (cancelled) return;
- 
-       const cleanedData = cleanRows(results.data);
- 
-       setCallData(cleanedData);
-       
-       useEffect(() => {
-        localStorage.setItem(
-          "pulseCallData",
-          JSON.stringify(callData)
+    let cancelled = false;
+  
+    const loadSharedPulseData = async () => {
+      setDataLoading(true);
+      setDataError("");
+  
+      try {
+        const response = await fetch(
+          "/.netlify/functions/get-pulse-data",
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+            },
+            cache: "no-store",
+          }
         );
-      }, [callData]);
- 
-       setDataError(
-         cleanedData.length > 0
-           ? ""
-           : "The demonstration file did not contain valid rows."
-       );
- 
-       setDataLoading(false);
-     },
- 
-     error: (error) => {
-       if (cancelled) return;
- 
-       console.error(
-         "Demonstration data error:",
-         error
-       );
- 
-       setCallData([]);
- 
-       setDataError(
-         "No demonstration data is available. Use Load Data to select a local file."
-       );
- 
-       setDataLoading(false);
-     },
-   });
- 
-   return () => {
-     cancelled = true;
-   };
- }, []);
+  
+        const result = await response.json();
+  
+        if (!response.ok) {
+          throw new Error(
+            result.message ||
+              "The shared Pulse dataset could not be loaded."
+          );
+        }
+  
+        if (cancelled) return;
+  
+        if (
+          result.found &&
+          Array.isArray(result.data) &&
+          result.data.length > 0
+        ) {
+          setCallData(result.data);
+          setDataError("");
+        } else {
+          setCallData([]);
+  
+          setDataError(
+            "No shared dataset has been uploaded yet."
+          );
+        }
+      } catch (error) {
+        if (cancelled) return;
+  
+        console.error(
+          "Shared Pulse data error:",
+          error
+        );
+  
+        setCallData([]);
+  
+        setDataError(
+          error instanceof Error
+            ? error.message
+            : "The shared Pulse dataset could not be loaded."
+        );
+      } finally {
+        if (!cancelled) {
+          setDataLoading(false);
+        }
+      }
+    };
+  
+    loadSharedPulseData();
+  
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const theme = useMemo(
     () => ellieThemes[ellieTheme] || ellieThemes.Sage,
