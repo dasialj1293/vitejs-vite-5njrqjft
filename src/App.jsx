@@ -4927,7 +4927,7 @@ const displayedContext =
 }
 
 
-function UploadDataButton({ onDataLoaded }) {
+function UploadDataButton({ onDataLoaded, setShowUploadCelebration, setUploadMessage, setUploadSuccess }) {
    const [uploading, setUploading] = useState(false);
  
    const normalizeHeader = (value) =>
@@ -5097,9 +5097,17 @@ function UploadDataButton({ onDataLoaded }) {
   
     onDataLoaded(cleanedData);
   
-    alert(
-      `${cleanedData.length.toLocaleString()} records were loaded and shared successfully.`
-    );
+    setUploadSuccess(true);
+
+setUploadMessage(
+  `${cleanedData.length.toLocaleString()} records were loaded successfully and shared with all Pulse users.`
+);
+
+setShowUploadCelebration(true);
+
+setTimeout(() => {
+  setShowUploadCelebration(false);
+}, 3000);
   };
  
    const parseDelimitedFile = (file, delimiter) => {
@@ -5119,11 +5127,19 @@ function UploadDataButton({ onDataLoaded }) {
         } catch (error) {
            console.error("File processing error:", error);
  
-           alert(
-             error instanceof Error
-               ? error.message
-               : "Pulse could not process this file."
-           );
+           setUploadSuccess(false);
+
+setUploadMessage(
+  error instanceof Error
+    ? error.message
+    : "Pulse could not process this file."
+);
+
+setShowUploadCelebration(true);
+
+setTimeout(() => {
+  setShowUploadCelebration(false);
+}, 3500);
          } finally {
            setUploading(false);
          }
@@ -5633,6 +5649,10 @@ export default function PulseIntelligence() {
   const [ellieOpen, setEllieOpen] = useState(false);
   const [inlineEllieQuestion, setInlineEllieQuestion] = useState("");
   const [showEllieWorkspace, setShowEllieWorkspace] = useState(false);
+
+  const [showUploadCelebration, setShowUploadCelebration] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState(true);
 
   const SHAREPOINT_EXCEL_URL =
   "https://iberdrolaus-my.sharepoint.com/:x:/r/personal/dasia_johnson_avangrid_com/Documents/Documents/Copilot/Created/Pulse_Large_Test_Dataset%201.xlsx?d=w27e945a5ff654635a17b61018c76c6da&csf=1&share=IQClReknZf81RqF7YQGMdsbaAdIO2PZTWzHMitlGJki4EwM&e=HhrPtL&download=1";
@@ -6934,6 +6954,15 @@ const askEllie = async (prompt) => {
     setDataLoading(false);
     setDataError("");
   }}
+  setShowUploadCelebration={
+    setShowUploadCelebration
+  }
+  setUploadMessage={
+    setUploadMessage
+  }
+  setUploadSuccess={
+    setUploadSuccess
+  }
 />
 
 </div>
@@ -7017,6 +7046,58 @@ const askEllie = async (prompt) => {
   This prototype contains synthetic data.
 </footer>
 </main>
+
+<AnimatePresence>
+  {showUploadCelebration && (
+    <motion.div
+      initial={{
+        opacity: 0,
+        scale: 0.9,
+      }}
+      animate={{
+        opacity: 1,
+        scale: 1,
+      }}
+      exit={{
+        opacity: 0,
+        scale: 0.9,
+      }}
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/20 backdrop-blur-sm"
+    >
+      <div className="rounded-[32px] bg-white p-8 text-center shadow-2xl">
+        <div className="flex justify-center">
+          <EllieRobot
+            size={120}
+            waving={uploadSuccess}
+            mood={
+              uploadSuccess
+                ? "excited"
+                : "thinking"
+            }
+            themeName={ellieTheme}
+            outfit={outfit}
+          />
+        </div>
+
+        <h3
+          className={`mt-4 text-2xl font-black ${
+            uploadSuccess
+              ? "text-emerald-700"
+              : "text-amber-600"
+          }`}
+        >
+          {uploadSuccess
+            ? "Dataset Updated!"
+            : "Oops!"}
+        </h3>
+
+        <p className="mt-3 max-w-sm text-sm leading-6 text-[#66766d]">
+          {uploadMessage}
+        </p>
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
 {!showEllieWorkspace && (
   <FloatingEllie
