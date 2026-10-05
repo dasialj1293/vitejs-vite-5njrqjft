@@ -5715,6 +5715,25 @@ if (savedData) {
     () => ellieThemes[ellieTheme] || ellieThemes.Sage,
     [ellieTheme]
   );
+
+  const todayLabel = new Date().toLocaleDateString(
+    "en-US",
+    {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }
+  );
+  
+  const currentMonthLabel =
+    new Date().toLocaleDateString(
+      "en-US",
+      {
+        month: "long",
+        year: "numeric",
+      }
+    );
   
   const calculatedMetrics = useMemo(() => {
     const totalCalls = callData.reduce(
@@ -6877,6 +6896,17 @@ const askEllie = async (prompt) => {
     {dynamicInsights.length}
   </p>
 </div>
+
+<div className="rounded-2xl bg-white/60 px-4 py-3 shadow-sm">
+  <p className="text-[10px] font-black uppercase">
+    Today
+  </p>
+
+  <p className="text-sm font-black">
+    {todayLabel}
+  </p>
+</div>
+
 
 <UploadDataButton
   onDataLoaded={(rows) => {
