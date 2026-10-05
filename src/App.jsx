@@ -1,5 +1,5 @@
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 import Papa from "papaparse"; 
 import CountUp from "react-countup";
 import { jsPDF } from "jspdf";
@@ -5621,6 +5621,9 @@ export default function PulseIntelligence() {
   const [inlineEllieQuestion, setInlineEllieQuestion] = useState("");
   const [showEllieWorkspace, setShowEllieWorkspace] = useState(false);
 
+  const SHAREPOINT_EXCEL_URL =
+  "https://iberdrolaus-my.sharepoint.com/:x:/r/personal/dasia_johnson_avangrid_com/Documents/Documents/Copilot/Created/Pulse_Large_Test_Dataset%201.xlsx?d=w27e945a5ff654635a17b61018c76c6da&csf=1&share=IQClReknZf81RqF7YQGMdsbaAdIO2PZTWzHMitlGJki4EwM&e=HhrPtL&download=1";
+
   useEffect(() => {
   const savedData =
   localStorage.getItem(
@@ -6743,6 +6746,47 @@ const downloadExecutiveBriefPdf = (
   );
 };
 
+const loadExcelFromSharePoint =
+  async () => {
+    try {
+      const response =
+        await fetch(
+          SHAREPOINT_EXCEL_URL
+        );
+
+      const arrayBuffer =
+        await response.arrayBuffer();
+
+      const workbook =
+        XLSX.read(arrayBuffer, {
+          type: "array",
+        });
+
+      const worksheet =
+        workbook.Sheets[
+          workbook.SheetNames[0]
+        ];
+
+      const rows =
+        XLSX.utils.sheet_to_json(
+          worksheet
+        );
+
+      console.log(
+        "SharePoint Excel Rows:",
+        rows
+      );
+
+      setCallData(rows);
+
+    } catch (error) {
+      console.error(
+        "SharePoint load error:",
+        error
+      );
+    }
+  };
+
 const askEllie = async (prompt) => {
   const text = String(prompt || "").trim();
 
@@ -6933,6 +6977,14 @@ const askEllie = async (prompt) => {
     setDataError("");
   }}
 />
+
+<button
+  type="button"
+  onClick={loadExcelFromSharePoint}
+  className="rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white"
+>
+  Load SharePoint Test
+</button>
 </div>
     
         
