@@ -540,8 +540,16 @@ function FloatingEllie({
             <div
               className="p-5 text-white"
               style={{
-                background: `linear-gradient(135deg, ${theme.deep}, ${theme.dark}, ${theme.mid})`,
-              }}
+                background:
+                  ellieTheme === "Avangrid"
+                    ? "linear-gradient(135deg, #1FB55C 0%, #11A5E5 30%, #F89A1C 65%, #F89A1C 100%)"
+                    : `linear-gradient(
+                        135deg,
+                        ${theme.deep},
+                        ${theme.dark},
+                        ${theme.mid}
+                    )`,
+                  }}
             >
               <div className="flex items-center gap-4">
   <div
@@ -724,7 +732,17 @@ function FloatingEllie({
         whileHover={{ scale: 1.05, y: -3 }}
         whileTap={{ scale: 0.95 }}
         className="fixed bottom-5 right-4 z-50 flex items-center gap-3 rounded-[25px] border border-white/80 p-2 pr-4 text-white shadow-[0_18px_50px_rgba(31,73,48,.34)] sm:bottom-7 sm:right-7"
-        style={{ background: `linear-gradient(135deg, ${theme.dark}, ${theme.deep})` }}
+        style={{
+          background:
+            ellieTheme === "Avangrid"
+              ? "linear-gradient(135deg, #1FB55C 0%, #11A5E5 30%, #F89A1C 65%, #F89A1C 100%)"
+              : `linear-gradient(
+                  135deg,
+                  ${theme.deep},
+                  ${theme.dark},
+                  ${theme.mid}
+              )`,
+            }}
       >
         <div
           className="grid h-16 w-16 place-items-center rounded-[20px] ring-1 ring-white/50"
