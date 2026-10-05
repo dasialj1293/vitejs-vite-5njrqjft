@@ -10,4 +10,7 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[functions.monthly-summary]
+schedule = "@daily"
   
