@@ -841,9 +841,9 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
     style={{
       background: `linear-gradient(
         105deg,
+        ${theme.mid},
         ${theme.deep},
-        ${theme.dark},
-        ${theme.mid}
+        ${theme.dark}
       )`,
     }}
   >
