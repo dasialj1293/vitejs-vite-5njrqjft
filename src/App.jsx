@@ -768,6 +768,59 @@ function FloatingEllie({
 }
 
 function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMetric, metrics, dynamicInsights, ellieOpen, setEllieOpen,}) {
+
+  const [overviewSlide, setOverviewSlide] = 
+    useState(0);
+  
+    const ellieMoods = [
+      "happy",
+      "thinking",
+      "excited",
+      "wink",
+    ];
+    
+    const [overviewEllieMood, setOverviewEllieMood] =
+      useState("happy");
+      
+  
+    const overviewSlides = [
+      {
+        title: "The Problem",
+        text:
+          "Customer service teams often react after customers already need to contact us. This creates repeat contacts, avoidable workload, higher operating costs, and hidden customer pain points. Without a centralized view of contact drivers, it can be difficult to identify emerging trends before they impact service performance.",
+      },
+    
+      {
+        title: "The Opportunity",
+        text:
+          "Pulse helps identify why customers are contacting us, highlights operational trends, and surfaces the largest service challenges. By organizing customer interactions into meaningful insights, teams can spend less time searching for answers and more time taking action.",
+      },
+    
+      {
+        title: "Business Impact",
+        text:
+          "By understanding call drivers, transfers, repeat contacts, forecasts, and operational risks, Pulse supports proactive decision-making. These insights help improve customer experience, reduce unnecessary effort, and provide leadership with a clearer understanding of service performance.",
+      },
+    
+      {
+        title: "Why Ellie?",
+        text:
+          "Ellie serves as the intelligence layer within Pulse. Rather than searching through reports and dashboards, users can ask questions in natural language and quickly receive explanations, forecasts, leadership summaries, and operational insights based on the available data.",
+      },
+    ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOverviewSlide((current) =>
+        current === overviewSlides.length - 1
+          ? 0
+          : current + 1
+      );
+    }, 10000);
+  
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <motion.section
       key="overview"
@@ -778,13 +831,109 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
       className="space-y-12"
     >
       <div>
-        <GlassCard className="overflow-hidden p-1" theme={theme}>
-          <div
-            className="grid gap-6 rounded-[25px] p-6 text-white lg:grid-cols-[1fr_250px]"
-            style={{
-              background: `linear-gradient(105deg, ${theme.deep}, ${theme.dark}, ${theme.mid})`,
-            }}
-          >
+
+      <GlassCard
+  theme={theme}
+  className="mb-6 min-h-[260px] overflow-hidden p-0"
+>
+  <div
+    className="p-6 text-white"
+    style={{
+      background: `linear-gradient(
+        105deg,
+        ${theme.deep},
+        ${theme.dark},
+        ${theme.mid}
+      )`,
+    }}
+  >
+
+  <div className="flex items-center justify-between gap-4">
+    <div>
+    <p className="text-xs font-black uppercase tracking-[.18em] text-white/70">
+  Why Pulse Matters?
+</p>
+
+      <h3
+        className="mt-2 text-4xl font-black text-white"
+      >
+        {overviewSlides[overviewSlide].title}
+      </h3>
+
+      <p className="mt-1 text-xs font-black text-white/70">
+  {overviewSlide + 1} of {overviewSlides.length}
+</p>
+    </div>
+    
+    
+  </div>
+
+  <AnimatePresence mode="wait">
+  <motion.p
+    key={overviewSlide}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.35 }}
+    className="mt-4 max-w-5xl text-lg font-semibold leading-8 text-white/90"
+  >
+    {overviewSlides[overviewSlide].text}
+  </motion.p>
+</AnimatePresence>
+
+  <div className="mt-6 flex items-center gap-3">
+  {overviewSlides.map((_, index) => (
+    <button
+      key={index}
+      type="button"
+      onClick={() =>
+        setOverviewSlide(index)
+      }
+      className="rounded-full transition-all duration-300"
+      style={{
+        width:
+          overviewSlide === index
+            ? "16px"
+            : "10px",
+
+        height:
+          overviewSlide === index
+            ? "16px"
+            : "10px",
+
+        background:
+          overviewSlide === index
+            ? "#ffffff"
+            : "rgba(255,255,255,.35)",
+
+        boxShadow:
+          overviewSlide === index
+            ? "0 0 12px rgba(255,255,255,.9)"
+            : "none",
+
+        transform:
+          overviewSlide === index
+            ? "scale(1.15)"
+            : "scale(1)",
+      }}
+    />
+  ))}
+</div>
+
+  </div>
+</GlassCard>
+
+<GlassCard
+  className="overflow-hidden p-1"
+  theme={theme}
+>
+  <div
+    className="grid gap-6 rounded-[25px] p-6 text-white lg:grid-cols-[1fr_250px]"
+    style={{
+      background: `linear-gradient(105deg, ${theme.deep}, ${theme.dark}, ${theme.mid})`,
+    }}
+  >
+          
             <div>
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[.18em] text-white/65">
                 <Sparkles size={14} /> Meet Ellie 
@@ -864,9 +1013,39 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
 </button>
 
             </div>
-            <div className="flex items-center justify-center rounded-[24px] border border-white/20 bg-white/10 p-4 backdrop-blur-xl">
-              <EllieRobot size={150} waving themeName={ellieTheme} outfit={outfit} />
-            </div>
+            <button
+  type="button"
+  onClick={() => {
+    const currentIndex =
+      ellieMoods.indexOf(
+        overviewEllieMood
+      );
+
+    const nextIndex =
+      currentIndex ===
+      ellieMoods.length - 1
+        ? 0
+        : currentIndex + 1;
+
+    setOverviewEllieMood(
+      ellieMoods[nextIndex]
+    );
+  }}
+  className="flex flex-col items-center justify-center rounded-[24px] border border-white/20 bg-white/10 p-4 backdrop-blur-xl transition hover:scale-105"
+>
+  <EllieRobot
+    size={150}
+    mood={overviewEllieMood}
+    waving={overviewEllieMood ==="excited"}
+    themeName={ellieTheme}
+    outfit={outfit}
+  />
+
+  <p className="mt-3 text-xs font-black text-white/70">
+    Click Ellie 😊
+  </p>
+
+</button>
           </div>
         </GlassCard>
 
@@ -7043,7 +7222,7 @@ const askEllie = async (prompt) => {
 </AnimatePresence>
 
 <footer className="py-7 text-center text-xs text-[#74857b]">
-  This prototype contains synthetic data.
+Powered by Ellie AI • Shared Pulse dataset synchronized across all users. 
 </footer>
 </main>
 
