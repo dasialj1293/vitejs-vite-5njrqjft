@@ -1104,6 +1104,7 @@ function QueueAnalyticsView({
   theme,
   askEllie,
   queueDrivers,
+  setEllieOpen,
 }) {
   const [selectedQueue, setSelectedQueue] = useState("All Queues");
 
@@ -1182,11 +1183,12 @@ function QueueAnalyticsView({
 
           <button
             type="button"
-            onClick={() =>
+            onClick={() => {
+              setEllieOpen(true);
               askEllie(
                 `Analyze repeat-contact drivers for ${selectedQueue}`
-              )
-            }
+              );
+            }}
             className="flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold"
             style={{
               background: `${theme.dark}16`,
@@ -1853,6 +1855,7 @@ const parseDashboardDate = (value) => {
    forecastData,
    callData,
    setHistoricalComparisonContext,
+   setEllieOpen,
  }) {
    const [frequency, setFrequency] =
      useState("Daily");
@@ -2601,11 +2604,12 @@ const parseDashboardDate = (value) => {
  
            <button
              type="button"
-             onClick={() =>
+             onClick={() => {
+               setEllieOpen(true);
                askEllie(
                  `Explain the ${frequency.toLowerCase()} forecast`
-               )
-             }
+               );
+             }}
              className="flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold"
              style={{
                background:
@@ -3264,13 +3268,14 @@ const parseDashboardDate = (value) => {
  
            <button
              type="button"
-             onClick={() =>
+             onClick={() => {
+               setEllieOpen(true);
                askEllie(
                  comparisonExists
                    ? `Compare ${selectedMonthLabel} to ${comparisonMonthLabel} for ${selectedQueue}`
                    : `Summarize ${selectedMonthLabel} for ${selectedQueue}`
-               )
-             }
+               );
+             }}
              className="flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold"
              style={{
                background:
@@ -3813,13 +3818,14 @@ placeholder="Choose a comparison"
  
                  <button
                    type="button"
-                   onClick={() =>
+                   onClick={() => {
+                     setEllieOpen(true);
                      askEllie(
                        comparisonExists
                          ? `What changed between ${comparisonMonthLabel} and ${selectedMonthLabel} for ${selectedQueue}?`
                          : `Summarize ${selectedMonthLabel} for ${selectedQueue}`
-                     )
-                   }
+                     );
+                   }}
                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black text-white"
                    style={{
                      background:
@@ -7005,9 +7011,9 @@ const askEllie = async (prompt) => {
   const renderActiveView = () => {
     switch (activeTab) {
       case "Queue Analytics":
-        return <QueueAnalyticsView theme={theme} askEllie={askEllie} queueDrivers={dynamicQueueDrivers} />;
+        return <QueueAnalyticsView theme={theme} askEllie={askEllie} queueDrivers={dynamicQueueDrivers} setEllieOpen={setEllieOpen} />;
       case "Forecasting":
-        return <ForecastingView theme={theme} askEllie={askEllie} forecastData={forecastData} callData={callData} setHistoricalComparisonContext={setHistoricalComparisonContext}/>;
+        return <ForecastingView theme={theme} askEllie={askEllie} forecastData={forecastData} callData={callData} setHistoricalComparisonContext={setHistoricalComparisonContext} setEllieOpen={setEllieOpen}/>;
         case "Leadership Hub":
           return (
             <ExecutiveCenterView
