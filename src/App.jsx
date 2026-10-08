@@ -781,8 +781,12 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
     
     const [overviewEllieMood, setOverviewEllieMood] =
       useState("happy");
+    
+    const openEllieWithPrompt = (prompt) => {
+      setEllieOpen(true);
+      askEllie(prompt);
+    };
       
-  
     const overviewSlides = [
       {
         title: "The Problem",
@@ -947,7 +951,7 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
   <button
     type="button"
     onClick={() =>
-      askEllie("Explain FCR")
+      openEllieWithPrompt("Explain FCR")
     }
     className="rounded-2xl px-4 py-3 text-sm font-black text-white"
     style={{
@@ -960,7 +964,7 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
   <button
     type="button"
     onClick={() =>
-      askEllie("Identify top risks")
+      openEllieWithPrompt("Identify top risks")
     }
     className="rounded-2xl px-4 py-3 text-sm font-black text-white"
     style={{
@@ -973,7 +977,7 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
   <button
     type="button"
     onClick={() =>
-      askEllie(
+      openEllieWithPrompt(
         "Generate leadership talking points"
       )
     }
@@ -1073,7 +1077,7 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
               key={insight.title}
               insight={insight}
               theme={theme}
-              onAsk={askEllie}
+              onAsk={openEllieWithPrompt}
             />
           ))}
         </div>
@@ -6980,7 +6984,7 @@ const askEllie = async (prompt) => {
 
   const explainMetric = (metric) => {
     if (!metric) return;
-
+    setEllieOpen(true);
     askEllie(
       metric.explanation ||
         `Explain ${metric.name}`
