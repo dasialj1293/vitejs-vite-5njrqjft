@@ -5629,106 +5629,492 @@ function UploadDataButton({ onDataLoaded, setShowUploadCelebration, setUploadMes
    };
  
    const normalizeRows = (rows) => {
-     return rows
-       .map((row) => {
-         const date = getValue(row, [
-           "Date",
-           "Call Date",
-           "Contact Date",
-           "Interaction Date",
-         ]);
- 
-         const queue = getValue(row, [
-           "Queue",
-           "Queue Name",
-           "Department",
-           "Business Area",
-         ]);
- 
-         const callType = getValue(row, [
-           "CallType",
-           "Call Type",
-           "Contact Type",
-           "Contact Reason",
-           "Reason",
-           "Driver",
-         ]);
- 
-         const calls = getValue(row, [
-           "Calls",
-           "Call Count",
-           "Contacts",
-           "Contact Count",
-           "Volume",
-           "Total Calls",
-         ]);
- 
-         const repeatCalls = getValue(row, [
-           "RepeatCalls",
-           "Repeat Calls",
-           "Repeats",
-           "Repeat Contacts",
-         ]);
- 
-         const resolvedCalls = getValue(row, [
-           "ResolvedCalls",
-           "Resolved Calls",
-           "Resolved",
-           "First Call Resolved",
-         ]);
- 
-         const transfers = getValue(row, [
-           "Transfers",
-           "Transferred Calls",
-           "Transfer Count",
-         ]);
- 
-         const escalations = getValue(row, [
-           "Escalations",
-           "Escalated Calls",
-           "Escalation Count",
-         ]);
- 
-         const averageHandleTime = getValue(row, [
-           "AverageHandleTime",
-           "Average Handle Time",
-           "AHT",
-           "Handle Time",
-         ]);
- 
-         return {
-           Date:
-             date !== undefined
-               ? String(date).trim()
-               : "",
- 
-           Queue:
-             queue !== undefined && String(queue).trim()
-               ? String(queue).trim()
-               : "Uncategorized",
- 
-           CallType:
-             callType !== undefined && String(callType).trim()
-               ? String(callType).trim()
-               : "Unknown",
- 
-           Calls: Number(calls) || 0,
-           RepeatCalls: Number(repeatCalls) || 0,
-           ResolvedCalls: Number(resolvedCalls) || 0,
-           Transfers: Number(transfers) || 0,
-           Escalations: Number(escalations) || 0,
- 
-           AverageHandleTime:
-             Number(averageHandleTime) || 0,
-         };
-       })
-       .filter(
-         (row) =>
-           row.Date &&
-           Number.isFinite(row.Calls) &&
-           row.Calls >= 0
-       );
-   };
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return [];
+      }
+    
+      const toNumber = (value) => {
+        if (
+          value === undefined ||
+          value === null ||
+          value === ""
+        ) {
+          return 0;
+        }
+    
+        const cleaned = String(value)
+          .replace(/,/g, "")
+          .replace(/%/g, "")
+          .trim();
+    
+        const number = Number(cleaned);
+    
+        return Number.isFinite(number)
+          ? number
+          : 0;
+      };
+    
+      const toFlag = (value) => {
+        if (
+          value === true ||
+          value === 1 ||
+          value === "1"
+        ) {
+          return 1;
+        }
+    
+        const normalized = String(
+          value ?? ""
+        )
+          .trim()
+          .toLowerCase();
+    
+        return [
+          "true",
+          "yes",
+          "y",
+          "fcr",
+          "resolved",
+        ].includes(normalized)
+          ? 1
+          : 0;
+      };
+    
+      const extractDate = (value) => {
+        if (!value) {
+          return "";
+        }
+    
+        const text = String(value).trim();
+    
+        /*
+          Handles timestamps such as:
+          2026-01-15 10:30:00
+          2026-01-15T10:30:00
+          1/15/2026 10:30 AM
+        */
+    
+        const isoMatch = text.match(
+          /^(\d{4})-(\d{1,2})-(\d{1,2})/
+        );
+    
+        if (isoMatch) {
+          const [, year, month, day] =
+            isoMatch;
+    
+          return `${year}-${String(
+            month
+          ).padStart(2, "0")}-${String(
+            day
+          ).padStart(2, "0")}`;
+        }
+    
+        const parsedDate = new Date(text);
+    
+        if (
+          Number.isNaN(
+            parsedDate.getTime()
+          )
+        ) {
+          return "";
+        }
+    
+        const year =
+          parsedDate.getFullYear();
+    
+        const month = String(
+          parsedDate.getMonth() + 1
+        ).padStart(2, "0");
+    
+        const day = String(
+          parsedDate.getDate()
+        ).padStart(2, "0");
+    
+        return `${year}-${month}-${day}`;
+      };
+    
+      const firstRow = rows[0] || {};
+    
+      const normalizedHeaders =
+        Object.keys(firstRow).map(
+          normalizeHeader
+        );
+    
+      const isInteractionLevelData =
+        normalizedHeaders.includes(
+          normalizeHeader(
+            "id_contract_account"
+          )
+        ) ||
+        normalizedHeaders.includes(
+          normalizeHeader("id_call")
+        ) ||
+        normalizedHeaders.includes(
+          normalizeHeader(
+            "desc_interaction_class"
+          )
+        ) ||
+        normalizedHeaders.includes(
+          normalizeHeader("timestp_min")
+        );
+    
+      /*
+        NEW REAL-DATA FORMAT
+    
+        Convert individual call/interaction records
+        into the aggregated structure Pulse already
+        uses internally.
+      */
+    
+      if (isInteractionLevelData) {
+        const groupedRows = new Map();
+    
+        rows.forEach((row, rowIndex) => {
+          const timestamp = getValue(row, [
+            "timestp_min",
+            "timestp_max",
+            "Timestamp",
+            "Interaction Timestamp",
+            "Call Timestamp",
+          ]);
+    
+          const date =
+            extractDate(timestamp);
+    
+          if (!date) {
+            return;
+          }
+    
+          const interactionClass =
+            getValue(row, [
+              "desc_interaction_class",
+              "Interaction Class",
+              "Contact Category",
+              "Category",
+            ]);
+    
+          const interactionAction =
+            getValue(row, [
+              "desc_interaction_action",
+              "Interaction Action",
+              "desc_reason",
+              "Contact Reason",
+              "Reason",
+            ]);
+    
+          const reasonLevelOne =
+            getValue(row, [
+              "desc_reason_level1",
+              "Reason Level 1",
+            ]);
+    
+          const workgroup = getValue(row, [
+            "id_dynamic_workgroup_name",
+            "id_last_assigned_workgroup",
+            "id_entered_workgroup",
+            "Workgroup",
+            "Queue",
+          ]);
+    
+          const category =
+            String(
+              interactionClass ||
+                reasonLevelOne ||
+                workgroup ||
+                "Uncategorized"
+            ).trim();
+    
+          const callType =
+            String(
+              interactionAction ||
+                getValue(row, [
+                  "desc_reason",
+                  "Reason",
+                ]) ||
+                "Unknown"
+            ).trim();
+    
+          const callId =
+            String(
+              getValue(row, [
+                "id_call",
+                "Call ID",
+              ]) ||
+                `row-${rowIndex}`
+            ).trim();
+    
+          const groupKey = [
+            date,
+            category,
+            callType,
+          ].join("|||");
+    
+          if (!groupedRows.has(groupKey)) {
+            groupedRows.set(groupKey, {
+              Date: date,
+    
+              /*
+                Queue stays in the internal data
+                model so the rest of Pulse does
+                not break.
+    
+                For this dataset, Queue represents
+                the interaction category.
+              */
+    
+              Queue: category,
+              CallType: callType,
+    
+              Calls: 0,
+              RepeatCalls: 0,
+              ResolvedCalls: 0,
+              Transfers: 0,
+              Escalations: 0,
+    
+              handleTimeTotal: 0,
+              handleTimeCount: 0,
+    
+              processedCallIds:
+                new Set(),
+            });
+          }
+    
+          const group =
+            groupedRows.get(groupKey);
+    
+          /*
+            The source may contain multiple
+            interaction records for one call.
+    
+            Count each id_call only once within
+            the same date/category/reason group.
+          */
+    
+          if (
+            group.processedCallIds.has(
+              callId
+            )
+          ) {
+            return;
+          }
+    
+          group.processedCallIds.add(
+            callId
+          );
+    
+          const fcrFlag = toFlag(
+            getValue(row, [
+              "flag_first_call_resolution_call_contract_account_within_14days",
+              "FCR Flag",
+              "First Call Resolution Flag",
+            ])
+          );
+    
+          const repeatFlag = toFlag(
+            getValue(row, [
+              "flag_repeat_call_contract_account_within_14days",
+              "Repeat Call Flag",
+              "Repeat Contact Flag",
+            ])
+          );
+    
+          const transferFlag = toFlag(
+            getValue(row, [
+              "flag_transfer",
+              "Transfer Flag",
+            ])
+          );
+    
+          const handleTime = toNumber(
+            getValue(row, [
+              "num_minutes_call_length_pureconnect_initial_last_interaction",
+              "num_minutes_call_length_pureconnect_sum_interactions",
+              "Call Length",
+              "Handle Time",
+            ])
+          );
+    
+          group.Calls += 1;
+          group.ResolvedCalls += fcrFlag;
+          group.RepeatCalls += repeatFlag;
+          group.Transfers += transferFlag;
+    
+          /*
+            Escalations remain zero because this
+            extract does not include a confirmed
+            escalation field.
+          */
+    
+          if (handleTime > 0) {
+            group.handleTimeTotal +=
+              handleTime;
+    
+            group.handleTimeCount += 1;
+          }
+        });
+    
+        return Array.from(
+          groupedRows.values()
+        )
+          .map((group) => {
+            const {
+              processedCallIds,
+              handleTimeTotal,
+              handleTimeCount,
+              ...pulseRow
+            } = group;
+    
+            return {
+              ...pulseRow,
+    
+              AverageHandleTime:
+                handleTimeCount > 0
+                  ? Number(
+                      (
+                        handleTimeTotal /
+                        handleTimeCount
+                      ).toFixed(2)
+                    )
+                  : 0,
+            };
+          })
+          .filter(
+            (row) =>
+              row.Date &&
+              Number.isFinite(row.Calls) &&
+              row.Calls > 0
+          );
+      }
+    
+      /*
+        ORIGINAL PULSE FORMAT
+    
+        Keep support for the synthetic/demo
+        dataset you were already using.
+      */
+    
+      return rows
+        .map((row) => {
+          const date = getValue(row, [
+            "Date",
+            "Call Date",
+            "Contact Date",
+            "Interaction Date",
+          ]);
+    
+          const queue = getValue(row, [
+            "Queue",
+            "Queue Name",
+            "Department",
+            "Business Area",
+          ]);
+    
+          const callType = getValue(row, [
+            "CallType",
+            "Call Type",
+            "Contact Type",
+            "Contact Reason",
+            "Reason",
+            "Driver",
+          ]);
+    
+          const calls = getValue(row, [
+            "Calls",
+            "Call Count",
+            "Contacts",
+            "Contact Count",
+            "Volume",
+            "Total Calls",
+          ]);
+    
+          const repeatCalls = getValue(
+            row,
+            [
+              "RepeatCalls",
+              "Repeat Calls",
+              "Repeats",
+              "Repeat Contacts",
+            ]
+          );
+    
+          const resolvedCalls = getValue(
+            row,
+            [
+              "ResolvedCalls",
+              "Resolved Calls",
+              "Resolved",
+              "First Call Resolved",
+            ]
+          );
+    
+          const transfers = getValue(row, [
+            "Transfers",
+            "Transferred Calls",
+            "Transfer Count",
+          ]);
+    
+          const escalations = getValue(
+            row,
+            [
+              "Escalations",
+              "Escalated Calls",
+              "Escalation Count",
+            ]
+          );
+    
+          const averageHandleTime =
+            getValue(row, [
+              "AverageHandleTime",
+              "Average Handle Time",
+              "AHT",
+              "Handle Time",
+            ]);
+    
+          return {
+            Date:
+              date !== undefined
+                ? String(date).trim()
+                : "",
+    
+            Queue:
+              queue !== undefined &&
+              String(queue).trim()
+                ? String(queue).trim()
+                : "Uncategorized",
+    
+            CallType:
+              callType !== undefined &&
+              String(callType).trim()
+                ? String(callType).trim()
+                : "Unknown",
+    
+            Calls: toNumber(calls),
+    
+            RepeatCalls:
+              toNumber(repeatCalls),
+    
+            ResolvedCalls:
+              toNumber(resolvedCalls),
+    
+            Transfers:
+              toNumber(transfers),
+    
+            Escalations:
+              toNumber(escalations),
+    
+            AverageHandleTime:
+              toNumber(
+                averageHandleTime
+              ),
+          };
+        })
+        .filter(
+          (row) =>
+            row.Date &&
+            Number.isFinite(row.Calls) &&
+            row.Calls >= 0
+        );
+    };
  
    const finishLoading = async (rows, fileName) => {
     const cleanedData = normalizeRows(rows);
