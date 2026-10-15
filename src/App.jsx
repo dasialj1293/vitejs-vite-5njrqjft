@@ -1101,266 +1101,744 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
 }
 
 function QueueAnalyticsView({
-  theme,
-  askEllie,
-  queueDrivers,
-  setEllieOpen,
-}) {
-  const [selectedQueue, setSelectedQueue] = useState("All Queues");
-
-  const queueOptions = useMemo(() => {
-    return [
-      "All Queues",
-      ...Array.from(
-        new Set(queueDrivers.map((row) => row.queue))
-      ).sort(),
-    ];
-  }, [queueDrivers]);
-
-  const filteredDrivers = useMemo(() => {
-    if (selectedQueue === "All Queues") {
-      return queueDrivers;
-    }
-
-    return queueDrivers.filter(
-      (row) => row.queue === selectedQueue
-    );
-  }, [queueDrivers, selectedQueue]);
-
-  return (
-    <motion.section
-      key="analytics"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs font-black uppercase tracking-widest text-[#7b8d81]">
-            Queue analytics
-          </p>
-
-          <h2
-            className="mt-1 text-2xl font-black"
-            style={{ color: theme.deep }}
-          >
-            {selectedQueue === "All Queues"
-              ? "All queue breakdown"
-              : `${selectedQueue} breakdown`}
-          </h2>
-
-          <p className="mt-2 text-sm text-[#718078]">
-            Calculated from the currently uploaded dataset.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-
-        <div className="flex flex-wrap gap-2">
-  {queueOptions.map((queue) => (
-    <button
-      key={queue}
-      type="button"
-      onClick={() => setSelectedQueue(queue)}
-      className={`rounded-2xl px-4 py-2 text-sm font-black transition ${
-        selectedQueue === queue
-          ? "text-white shadow"
-          : "border border-white/80 bg-white/60"
-      }`}
-      style={
-        selectedQueue === queue
-          ? { background: theme.dark }
-          : { color: theme.deep }
-      }
-    >
-      {queue}
-    </button>
-  ))}
-</div>
-
-          
-
-          <button
-            type="button"
-            onClick={() => {
-              setEllieOpen(true);
-              askEllie(
-                `Analyze repeat-contact drivers for ${selectedQueue}`
-              );
-            }}
-            className="flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold"
-            style={{
-              background: `${theme.dark}16`,
-              color: theme.dark,
-            }}
-          >
-            <Sparkles size={13} />
-            Analyze drivers
-          </button>
-        </div>
-      </div>
-
-      <GlassCard className="overflow-hidden p-6" theme={theme}>
-        <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl bg-white/50 p-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
-              Call types
-            </p>
-            <p
-              className="mt-2 text-xl font-black"
-              style={{ color: theme.deep }}
-            >
-              <CountUp
-  key={`${selectedQueue}-call-types`}
-  start={0}
-  end={filteredDrivers.length}
-  duration={0.8}
-/>
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white/50 p-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
-              Total contacts
-            </p>
-            <p
-              className="mt-2 text-xl font-black"
-              style={{ color: theme.deep }}
-            >
-              <CountUp
-  key={selectedQueue}
-  start={0}
-  end={filteredDrivers.reduce(
-    (sum, row) => sum + row.calls,
-    0
-  )}
-  duration={1.1}
-  separator=","
-/>
-            </p>
-          </div>
-
-          <div className="rounded-2xl bg-white/50 p-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
-              Highest-volume driver
-            </p>
-            <motion.p
-  key={`${selectedQueue}-${filteredDrivers[0]?.name || "no-data"}`}
-  initial={{ opacity: 0, x: -10 }}
-  animate={{ opacity: 1, x: 0 }}
-  transition={{ duration: 0.35 }}
-  className="mt-2 text-sm font-black"
-  style={{ color: theme.deep }}
->
-  {filteredDrivers[0]?.name || "No data"}
-</motion.p>
-          </div>
-
-          <div className="rounded-2xl bg-white/50 p-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
-              Items needing review
-            </p>
-            <p
-              className="mt-2 text-xl font-black"
-              style={{ color: theme.deep }}
-            >
-              <CountUp
-  key={`${selectedQueue}-review-count`}
-  start={0}
-  end={
-    filteredDrivers.filter(
-      (row) => row.status === "Review"
-    ).length
-  }
-  duration={0.8}
-/>
-            </p>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
-            <thead>
-              <tr className="border-b border-[#728378]/15 text-[10px] uppercase tracking-widest text-[#7b8d81]">
-                <th className="px-4 py-3">Queue</th>
-                <th className="px-4 py-3">Call type</th>
-                <th className="px-4 py-3">Contacts</th>
-                <th className="px-4 py-3">FCR</th>
-                <th className="px-4 py-3">Repeat rate</th>
-                <th className="px-4 py-3">Transfer rate</th>
-                <th className="px-4 py-3">Avg handle time</th>
-                <th className="px-4 py-3">Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredDrivers.map((row) => (
-                <tr
-                  key={`${row.queue}-${row.name}`}
-                  className="border-b border-[#728378]/10 last:border-0"
-                >
-                  <td className="px-4 py-4 text-[#66766d]">
-                    {row.queue}
-                  </td>
-
-                  <td
-                    className="px-4 py-4 font-black"
-                    style={{ color: theme.deep }}
-                  >
-                    {row.name}
-                  </td>
-
-                  <td className="px-4 py-4 text-[#66766d]">
-                    {row.contacts}
-                  </td>
-
-                  <td className="px-4 py-4 text-[#66766d]">
-                    {row.fcr}
-                  </td>
-
-                  <td className="px-4 py-4 text-[#66766d]">
-                    {row.repeat}
-                  </td>
-
-                  <td className="px-4 py-4 text-[#66766d]">
-                    {row.transferRate}
-                  </td>
-
-                  <td className="px-4 py-4 text-[#66766d]">
-                    {row.averageHandleTime} min
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <span
-                      className="rounded-full px-3 py-1.5 text-[10px] font-black"
-                      style={{
-                        background:
-                          row.status === "Review"
-                            ? "#fee2e2"
-                            : row.status === "Monitor"
-                            ? "#fef3c7"
-                            : `${theme.dark}13`,
-                        color:
-                          row.status === "Review"
-                            ? "#b91c1c"
-                            : row.status === "Monitor"
-                            ? "#a16207"
-                            : theme.dark,
-                      }}
-                    >
-                      {row.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </GlassCard>
-    </motion.section>
-  );
-}
+   theme,
+   askEllie,
+   queueDrivers,
+   setEllieOpen,
+ }) {
+   const [selectedCategory, setSelectedCategory] =
+     useState("All Contact Types");
+ 
+   const formatNumber = (value) =>
+     Number(value || 0).toLocaleString("en-US");
+ 
+   const parsePercent = (value) => {
+     if (typeof value === "number") {
+       return value;
+     }
+ 
+     return (
+       Number(
+         String(value ?? "0")
+           .replace("%", "")
+           .trim()
+       ) || 0
+     );
+   };
+ 
+   const categoryOptions = useMemo(() => {
+     return [
+       "All Contact Types",
+       ...Array.from(
+         new Set(
+           queueDrivers
+             .map(
+               (row) =>
+                 row.category ||
+                 row.queue ||
+                 "Unknown"
+             )
+             .filter(Boolean)
+         )
+       ).sort(),
+     ];
+   }, [queueDrivers]);
+ 
+   const filteredDrivers = useMemo(() => {
+     if (
+       selectedCategory ===
+       "All Contact Types"
+     ) {
+       return queueDrivers;
+     }
+ 
+     return queueDrivers.filter((row) => {
+       const rowCategory =
+         row.category ||
+         row.queue ||
+         "Unknown";
+ 
+       return (
+         rowCategory === selectedCategory
+       );
+     });
+   }, [queueDrivers, selectedCategory]);
+ 
+   const analyticsSummary = useMemo(() => {
+     const summary = filteredDrivers.reduce(
+       (result, row) => {
+         const contacts =
+           Number(
+             row.contacts ??
+               row.calls ??
+               0
+           ) || 0;
+ 
+         const repeatContacts =
+           Number(
+             row.repeatContacts ??
+               row.repeatCalls ??
+               0
+           ) || 0;
+ 
+         const transfers =
+           Number(row.transfers ?? 0) || 0;
+ 
+         const resolvedContacts =
+           Number(
+             row.resolvedContacts ??
+               row.resolvedCalls ??
+               0
+           ) || 0;
+ 
+         const averageHandleTime =
+           Number(
+             row.averageHandleTime ?? 0
+           ) || 0;
+ 
+         result.contacts += contacts;
+         result.repeatContacts +=
+           repeatContacts;
+         result.transfers += transfers;
+         result.resolvedContacts +=
+           resolvedContacts;
+ 
+         result.handleTimeTotal +=
+           averageHandleTime * contacts;
+ 
+         return result;
+       },
+       {
+         contacts: 0,
+         repeatContacts: 0,
+         transfers: 0,
+         resolvedContacts: 0,
+         handleTimeTotal: 0,
+       }
+     );
+ 
+     /*
+       If raw counts are available, use them.
+ 
+       If only percentages are available,
+       calculate weighted averages using contacts
+       as the weight.
+     */
+ 
+     const weightedFcrTotal =
+       filteredDrivers.reduce(
+         (sum, row) => {
+           const contacts =
+             Number(
+               row.contacts ??
+                 row.calls ??
+                 0
+             ) || 0;
+ 
+           return (
+             sum +
+             parsePercent(row.fcr) *
+               contacts
+           );
+         },
+         0
+       );
+ 
+     const weightedRepeatTotal =
+       filteredDrivers.reduce(
+         (sum, row) => {
+           const contacts =
+             Number(
+               row.contacts ??
+                 row.calls ??
+                 0
+             ) || 0;
+ 
+           return (
+             sum +
+             parsePercent(row.repeat) *
+               contacts
+           );
+         },
+         0
+       );
+ 
+     const weightedTransferTotal =
+       filteredDrivers.reduce(
+         (sum, row) => {
+           const contacts =
+             Number(
+               row.contacts ??
+                 row.calls ??
+                 0
+             ) || 0;
+ 
+           return (
+             sum +
+             parsePercent(
+               row.transferRate
+             ) *
+               contacts
+           );
+         },
+         0
+       );
+ 
+     const fcr =
+       summary.resolvedContacts > 0 &&
+       summary.contacts > 0
+         ? (summary.resolvedContacts /
+             summary.contacts) *
+           100
+         : summary.contacts > 0
+         ? weightedFcrTotal /
+           summary.contacts
+         : 0;
+ 
+     const repeatRate =
+       summary.repeatContacts > 0 &&
+       summary.contacts > 0
+         ? (summary.repeatContacts /
+             summary.contacts) *
+           100
+         : summary.contacts > 0
+         ? weightedRepeatTotal /
+           summary.contacts
+         : 0;
+ 
+     const transferRate =
+       summary.transfers > 0 &&
+       summary.contacts > 0
+         ? (summary.transfers /
+             summary.contacts) *
+           100
+         : summary.contacts > 0
+         ? weightedTransferTotal /
+           summary.contacts
+         : 0;
+ 
+     const averageHandleTime =
+       summary.contacts > 0
+         ? summary.handleTimeTotal /
+           summary.contacts
+         : 0;
+ 
+     const highestVolumeDriver = [
+       ...filteredDrivers,
+     ].sort(
+       (first, second) =>
+         Number(
+           second.contacts ??
+             second.calls ??
+             0
+         ) -
+         Number(
+           first.contacts ??
+             first.calls ??
+             0
+         )
+     )[0];
+ 
+     return {
+       contacts: summary.contacts,
+       repeatContacts:
+         summary.repeatContacts,
+       fcr,
+       repeatRate,
+       transferRate,
+       averageHandleTime,
+       highestVolumeDriver:
+         highestVolumeDriver?.name ||
+         highestVolumeDriver
+           ?.interactionAction ||
+         "No data",
+       reviewCount:
+         filteredDrivers.filter(
+           (row) =>
+             row.status === "Review"
+         ).length,
+     };
+   }, [filteredDrivers]);
+ 
+   return (
+     <motion.section
+       key="analytics"
+       initial={{
+         opacity: 0,
+         y: 20,
+       }}
+       animate={{
+         opacity: 1,
+         y: 0,
+       }}
+       exit={{
+         opacity: 0,
+         y: -12,
+       }}
+       transition={{
+         duration: 0.3,
+       }}
+     >
+       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+         <div>
+           <p className="text-xs font-black uppercase tracking-widest text-[#7b8d81]">
+             Contact analytics
+           </p>
+ 
+           <h2
+             className="mt-1 text-2xl font-black"
+             style={{
+               color: theme.deep,
+             }}
+           >
+             {selectedCategory ===
+             "All Contact Types"
+               ? "All contact drivers"
+               : `${selectedCategory} breakdown`}
+           </h2>
+ 
+           <p className="mt-2 text-sm text-[#718078]">
+             Explore contact reasons,
+             resolution outcomes, repeat
+             contacts, transfers, and handle
+             time from the uploaded dataset.
+           </p>
+         </div>
+ 
+         <div className="flex flex-wrap items-center gap-3">
+           <div className="flex flex-wrap gap-2">
+             {categoryOptions.map(
+               (category) => (
+                 <button
+                   key={category}
+                   type="button"
+                   onClick={() =>
+                     setSelectedCategory(
+                       category
+                     )
+                   }
+                   className={`rounded-2xl px-4 py-2 text-sm font-black transition ${
+                     selectedCategory ===
+                     category
+                       ? "text-white shadow"
+                       : "border border-white/80 bg-white/60"
+                   }`}
+                   style={
+                     selectedCategory ===
+                     category
+                       ? {
+                           background:
+                             theme.dark,
+                         }
+                       : {
+                           color:
+                             theme.deep,
+                         }
+                   }
+                 >
+                   {category}
+                 </button>
+               )
+             )}
+           </div>
+ 
+           <button
+             type="button"
+             onClick={() => {
+               setEllieOpen(true);
+ 
+               askEllie(
+                 selectedCategory ===
+                   "All Contact Types"
+                   ? "Analyze contact drivers, FCR, repeat contacts, transfers, and handle time across all contact types."
+                   : `Analyze FCR, repeat contacts, transfers, and handle time for ${selectedCategory}. Identify the detailed contact reasons that may need review.`
+               );
+             }}
+             className="flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold"
+             style={{
+               background:
+                 `${theme.dark}16`,
+               color: theme.dark,
+             }}
+           >
+             <Sparkles size={13} />
+             Analyze drivers
+           </button>
+         </div>
+       </div>
+ 
+       <GlassCard
+         className="overflow-hidden p-6"
+         theme={theme}
+       >
+         {/* KPI CARDS */}
+ 
+         <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+           <div className="rounded-2xl bg-white/50 p-4">
+             <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+               Total contacts
+             </p>
+ 
+             <p
+               className="mt-2 text-xl font-black"
+               style={{
+                 color: theme.deep,
+               }}
+             >
+               <CountUp
+                 key={`${selectedCategory}-contacts`}
+                 start={0}
+                 end={
+                   analyticsSummary.contacts
+                 }
+                 duration={1.1}
+                 separator=","
+               />
+             </p>
+           </div>
+ 
+           <div className="rounded-2xl bg-white/50 p-4">
+             <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+               FCR
+             </p>
+ 
+             <p
+               className="mt-2 text-xl font-black"
+               style={{
+                 color: theme.deep,
+               }}
+             >
+               <CountUp
+                 key={`${selectedCategory}-fcr`}
+                 start={0}
+                 end={analyticsSummary.fcr}
+                 duration={0.9}
+                 decimals={1}
+                 suffix="%"
+               />
+             </p>
+ 
+             <p className="mt-1 text-[10px] font-bold text-[#87948d]">
+               Source-defined resolution
+               classification
+             </p>
+           </div>
+ 
+           <div className="rounded-2xl bg-white/50 p-4">
+             <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+               Repeat contact rate
+             </p>
+ 
+             <p
+               className="mt-2 text-xl font-black"
+               style={{
+                 color: theme.deep,
+               }}
+             >
+               <CountUp
+                 key={`${selectedCategory}-repeat-rate`}
+                 start={0}
+                 end={
+                   analyticsSummary.repeatRate
+                 }
+                 duration={0.9}
+                 decimals={1}
+                 suffix="%"
+               />
+             </p>
+ 
+             {analyticsSummary.repeatContacts >
+               0 && (
+               <p className="mt-1 text-[10px] font-bold text-[#87948d]">
+                 {formatNumber(
+                   analyticsSummary.repeatContacts
+                 )}{" "}
+                 repeat contacts
+               </p>
+             )}
+           </div>
+ 
+           <div className="rounded-2xl bg-white/50 p-4">
+             <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+               Transfer rate
+             </p>
+ 
+             <p
+               className="mt-2 text-xl font-black"
+               style={{
+                 color: theme.deep,
+               }}
+             >
+               <CountUp
+                 key={`${selectedCategory}-transfer-rate`}
+                 start={0}
+                 end={
+                   analyticsSummary.transferRate
+                 }
+                 duration={0.9}
+                 decimals={1}
+                 suffix="%"
+               />
+             </p>
+           </div>
+ 
+           <div className="rounded-2xl bg-white/50 p-4">
+             <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+               Avg handle time
+             </p>
+ 
+             <p
+               className="mt-2 text-xl font-black"
+               style={{
+                 color: theme.deep,
+               }}
+             >
+               <CountUp
+                 key={`${selectedCategory}-aht`}
+                 start={0}
+                 end={
+                   analyticsSummary.averageHandleTime
+                 }
+                 duration={0.9}
+                 decimals={1}
+                 suffix=" min"
+               />
+             </p>
+           </div>
+         </div>
+ 
+         {/* DRIVER SUMMARY */}
+ 
+         <div className="mb-5 grid gap-3 sm:grid-cols-2">
+           <div
+             className="rounded-2xl p-4"
+             style={{
+               background:
+                 `${theme.dark}0D`,
+             }}
+           >
+             <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+               Highest-volume contact reason
+             </p>
+ 
+             <motion.p
+               key={`${selectedCategory}-${analyticsSummary.highestVolumeDriver}`}
+               initial={{
+                 opacity: 0,
+                 x: -10,
+               }}
+               animate={{
+                 opacity: 1,
+                 x: 0,
+               }}
+               transition={{
+                 duration: 0.35,
+               }}
+               className="mt-2 text-base font-black"
+               style={{
+                 color: theme.deep,
+               }}
+             >
+               {
+                 analyticsSummary.highestVolumeDriver
+               }
+             </motion.p>
+           </div>
+ 
+           <div
+             className="rounded-2xl p-4"
+             style={{
+               background:
+                 `${theme.dark}0D`,
+             }}
+           >
+             <p className="text-[10px] font-black uppercase tracking-widest text-[#7b8d81]">
+               Drivers needing review
+             </p>
+ 
+             <p
+               className="mt-2 text-xl font-black"
+               style={{
+                 color: theme.deep,
+               }}
+             >
+               <CountUp
+                 key={`${selectedCategory}-review-count`}
+                 start={0}
+                 end={
+                   analyticsSummary.reviewCount
+                 }
+                 duration={0.8}
+               />
+             </p>
+           </div>
+         </div>
+ 
+         {/* CONTACT DRIVER TABLE */}
+ 
+         <div className="overflow-x-auto">
+           <table className="w-full min-w-[980px] text-left text-sm">
+             <thead>
+               <tr className="border-b border-[#728378]/15 text-[10px] uppercase tracking-widest text-[#7b8d81]">
+                 <th className="px-4 py-3">
+                   Contact category
+                 </th>
+ 
+                 <th className="px-4 py-3">
+                   Contact reason
+                 </th>
+ 
+                 <th className="px-4 py-3">
+                   Contacts
+                 </th>
+ 
+                 <th className="px-4 py-3">
+                   FCR
+                 </th>
+ 
+                 <th className="px-4 py-3">
+                   Repeat rate
+                 </th>
+ 
+                 <th className="px-4 py-3">
+                   Transfer rate
+                 </th>
+ 
+                 <th className="px-4 py-3">
+                   Avg handle time
+                 </th>
+ 
+                 <th className="px-4 py-3">
+                   Status
+                 </th>
+               </tr>
+             </thead>
+ 
+             <tbody>
+               {filteredDrivers.length ===
+               0 ? (
+                 <tr>
+                   <td
+                     colSpan={8}
+                     className="px-4 py-10 text-center font-bold text-[#718078]"
+                   >
+                     No contact data is
+                     available for this
+                     selection.
+                   </td>
+                 </tr>
+               ) : (
+                 filteredDrivers.map(
+                   (row, index) => {
+                     const category =
+                       row.category ||
+                       row.queue ||
+                       "Unknown";
+ 
+                     const contactReason =
+                       row.name ||
+                       row.interactionAction ||
+                       "Unknown";
+ 
+                     const contacts =
+                       Number(
+                         row.contacts ??
+                           row.calls ??
+                           0
+                       ) || 0;
+ 
+                     return (
+                       <tr
+                         key={`${category}-${contactReason}-${index}`}
+                         className="border-b border-[#728378]/10 last:border-0"
+                       >
+                         <td className="px-4 py-4 text-[#66766d]">
+                           {category}
+                         </td>
+ 
+                         <td
+                           className="px-4 py-4 font-black"
+                           style={{
+                             color:
+                               theme.deep,
+                           }}
+                         >
+                           {contactReason}
+                         </td>
+ 
+                         <td className="px-4 py-4 text-[#66766d]">
+                           {formatNumber(
+                             contacts
+                           )}
+                         </td>
+ 
+                         <td className="px-4 py-4 text-[#66766d]">
+                           {parsePercent(
+                             row.fcr
+                           ).toFixed(1)}
+                           %
+                         </td>
+ 
+                         <td className="px-4 py-4 text-[#66766d]">
+                           {parsePercent(
+                             row.repeat
+                           ).toFixed(1)}
+                           %
+                         </td>
+ 
+                         <td className="px-4 py-4 text-[#66766d]">
+                           {parsePercent(
+                             row.transferRate
+                           ).toFixed(1)}
+                           %
+                         </td>
+ 
+                         <td className="px-4 py-4 text-[#66766d]">
+                           {Number(
+                             row.averageHandleTime ??
+                               0
+                           ).toFixed(1)}{" "}
+                           min
+                         </td>
+ 
+                         <td className="px-4 py-4">
+                           <span
+                             className="rounded-full px-3 py-1.5 text-[10px] font-black"
+                             style={{
+                               background:
+                                 row.status ===
+                                 "Review"
+                                   ? "#fee2e2"
+                                   : row.status ===
+                                     "Monitor"
+                                   ? "#fef3c7"
+                                   : `${theme.dark}13`,
+                               color:
+                                 row.status ===
+                                 "Review"
+                                   ? "#b91c1c"
+                                   : row.status ===
+                                     "Monitor"
+                                   ? "#a16207"
+                                   : theme.dark,
+                             }}
+                           >
+                             {row.status ||
+                               "On Track"}
+                           </span>
+                         </td>
+                       </tr>
+                     );
+                   }
+                 )
+               )}
+             </tbody>
+           </table>
+         </div>
+       </GlassCard>
+     </motion.section>
+   );
+ }
 
 const parseDashboardDate = (value) => {
    if (!value) return null;
