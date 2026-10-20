@@ -881,14 +881,14 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
             {overviewSlides[overviewSlide].title}
           </h3>
 
-          <p className="mt-1 text-xs font-black text-white/70">
+          <p className="mt-2 text-sm font-black text-white/70">
             {overviewSlide + 1} of{" "}
             {overviewSlides.length}
           </p>
 
-          <p className="mt-4 max-w-5xl text-lg font-semibold leading-8 text-white/90">
-            {overviewSlides[overviewSlide].text}
-          </p>
+          <p className="mt-5 max-w-5xl text-lg font-semibold leading-8 text-white/90 sm:text-xl sm:leading-9 lg:text-[22px] lg:leading-10">
+  {overviewSlides[overviewSlide].text}
+</p>
         </motion.div>
       </AnimatePresence>
     </div>
