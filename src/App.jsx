@@ -881,7 +881,7 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
             {overviewSlides[overviewSlide].title}
           </h3>
 
-          <p className="mt-1 text-lg font-black text-white/70">
+          <p className="mt-1 text-sm font-black text-white/70">
             {overviewSlide + 1} of{" "}
             {overviewSlides.length}
           </p>
