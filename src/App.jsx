@@ -852,25 +852,23 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
     }}
   >
 
-    <div className="relative min-h-[185px] overflow-hidden">
+    <div className="relative h-[250px] overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
           key={overviewSlide}
+          className="absolute inset-0 w-full"
           initial={{
             opacity: 0,
-            y: 8,
           }}
           animate={{
             opacity: 1,
-            y: 0,
           }}
           exit={{
             opacity: 0,
-            y: -6,
           }}
           transition={{
-            duration: 0.35,
-            ease: [0.22, 1, 0.36, 1],
+            duration: 0.45,
+            ease: "easeInOut",
           }}
         >
           <p className="text-xs font-black uppercase tracking-[.18em] text-white/70">
@@ -881,7 +879,7 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
             {overviewSlides[overviewSlide].title}
           </h3>
 
-          <p className="mt-1 text-sm font-black text-white/70">
+          <p className="mt-2 text-sm font-black text-white/70">
             {overviewSlide + 1} of{" "}
             {overviewSlides.length}
           </p>
