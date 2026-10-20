@@ -852,80 +852,78 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
     }}
   >
 
-  <div className="flex items-center justify-between gap-4">
-    <div>
-    <p className="text-xs font-black uppercase tracking-[.18em] text-white/70">
-  Why Pulse Matters?
-</p>
+    <div className="relative min-h-[185px] overflow-hidden">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={overviewSlide}
+          initial={{
+            opacity: 0,
+            y: 8,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          exit={{
+            opacity: 0,
+            y: -6,
+          }}
+          transition={{
+            duration: 0.35,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          <p className="text-xs font-black uppercase tracking-[.18em] text-white/70">
+            Why Pulse Matters?
+          </p>
 
-      <h3
-        className="mt-2 text-4xl font-black text-white"
-      >
-        {overviewSlides[overviewSlide].title}
-      </h3>
+          <h3 className="mt-2 text-4xl font-black text-white">
+            {overviewSlides[overviewSlide].title}
+          </h3>
 
-      <p className="mt-1 text-xs font-black text-white/70">
-  {overviewSlide + 1} of {overviewSlides.length}
-</p>
+          <p className="mt-1 text-xs font-black text-white/70">
+            {overviewSlide + 1} of{" "}
+            {overviewSlides.length}
+          </p>
+
+          <p className="mt-4 max-w-5xl text-lg font-semibold leading-8 text-white/90">
+            {overviewSlides[overviewSlide].text}
+          </p>
+        </motion.div>
+      </AnimatePresence>
     </div>
-    
-    
-  </div>
 
-  <AnimatePresence mode="wait">
-  <motion.p
-    key={overviewSlide}
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    transition={{ duration: 0.35 }}
-    className="mt-4 max-w-5xl text-lg font-semibold leading-8 text-white/90"
-  >
-    {overviewSlides[overviewSlide].text}
-  </motion.p>
-</AnimatePresence>
-
-  <div className="mt-6 flex items-center gap-3">
-  {overviewSlides.map((_, index) => (
-    <button
-      key={index}
-      type="button"
-      onClick={() =>
-        setOverviewSlide(index)
-      }
-      className="rounded-full transition-all duration-300"
-      style={{
-        width:
-          overviewSlide === index
-            ? "16px"
-            : "10px",
-
-        height:
-          overviewSlide === index
-            ? "16px"
-            : "10px",
-
-        background:
-          overviewSlide === index
-            ? "#ffffff"
-            : "rgba(255,255,255,.35)",
-
-        boxShadow:
-          overviewSlide === index
-            ? "0 0 12px rgba(255,255,255,.9)"
-            : "none",
-
-        transform:
-          overviewSlide === index
-            ? "scale(1.15)"
-            : "scale(1)",
-      }}
-    />
-  ))}
-</div>
+    <div className="mt-6 flex items-center gap-3">
+      {overviewSlides.map((_, index) => (
+        <button
+          key={index}
+          type="button"
+          onClick={() =>
+            setOverviewSlide(index)
+          }
+          className="rounded-full transition-all duration-300"
+          style={{
+            width: "12px",
+            height: "12px",
+            background:
+              overviewSlide === index
+                ? "#ffffff"
+                : "rgba(255,255,255,.35)",
+            boxShadow:
+              overviewSlide === index
+                ? "0 0 12px rgba(255,255,255,.9)"
+                : "none",
+            transform:
+              overviewSlide === index
+                ? "scale(1.3)"
+                : "scale(0.85)",
+          }}
+        />
+      ))}
+    </div>
 
   </div>
-</GlassCard>
+</GlassCard>     
 
 <GlassCard
   className="overflow-hidden p-1"
