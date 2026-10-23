@@ -852,40 +852,46 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
     }}
   >
 
-  <div className="flex items-center justify-between gap-4">
-    <div>
-    <p className="text-xs font-black uppercase tracking-[.18em] text-white/70">
-  Why Pulse Matters?
-</p>
+<div className="relative h-[270px] overflow-hidden">
+  <AnimatePresence mode="wait">
+    <motion.div
+      key={overviewSlide}
+      className="absolute inset-0 w-full"
+      initial={{
+        opacity: 0,
+      }}
+      animate={{
+        opacity: 1,
+      }}
+      exit={{
+        opacity: 0,
+      }}
+      transition={{
+        duration: 0.4,
+        ease: "easeInOut",
+      }}
+    >
+      <p className="text-xs font-black uppercase tracking-[.18em] text-white/70">
+        Why Pulse Matters?
+      </p>
 
-      <h3
-        className="mt-2 text-4xl font-black text-white"
-      >
+      <h3 className="mt-2 text-4xl font-black text-white">
         {overviewSlides[overviewSlide].title}
       </h3>
 
-      <p className="mt-1 text-xs font-black text-white/70">
-  {overviewSlide + 1} of {overviewSlides.length}
-</p>
-    </div>
-    
-    
-  </div>
+      <p className="mt-2 text-sm font-black text-white/70">
+        {overviewSlide + 1} of{" "}
+        {overviewSlides.length}
+      </p>
 
-  <AnimatePresence mode="wait">
-  <motion.p
-    key={overviewSlide}
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    transition={{ duration: 0.35 }}
-    className="mt-4 max-w-5xl text-lg font-semibold leading-8 text-white/90"
-  >
-    {overviewSlides[overviewSlide].text}
-  </motion.p>
-</AnimatePresence>
+      <p className="mt-5 max-w-5xl text-lg font-semibold leading-8 text-white/90 sm:text-xl sm:leading-9 lg:text-[22px] lg:leading-10">
+        {overviewSlides[overviewSlide].text}
+      </p>
+    </motion.div>
+  </AnimatePresence>
+</div>
 
-  <div className="mt-6 flex items-center gap-3">
+<div className="mt-6 flex h-[18px] items-center gap-3">
   {overviewSlides.map((_, index) => (
     <button
       key={index}
@@ -893,18 +899,11 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
       onClick={() =>
         setOverviewSlide(index)
       }
-      className="rounded-full transition-all duration-300"
+      aria-label={`Go to overview slide ${
+        index + 1
+      }`}
+      className="h-3 w-3 shrink-0 rounded-full transition-[transform,background-color,box-shadow] duration-300"
       style={{
-        width:
-          overviewSlide === index
-            ? "16px"
-            : "10px",
-
-        height:
-          overviewSlide === index
-            ? "16px"
-            : "10px",
-
         background:
           overviewSlide === index
             ? "#ffffff"
@@ -917,8 +916,8 @@ function OverviewView({ theme, ellieTheme, outfit, viewMode, askEllie, explainMe
 
         transform:
           overviewSlide === index
-            ? "scale(1.15)"
-            : "scale(1)",
+            ? "scale(1.3)"
+            : "scale(0.85)",
       }}
     />
   ))}
